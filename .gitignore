@@ -1,7 +1,8 @@
-# ── Backend (Laravel) ─────────────────────────────────────────────
+# ── Laravel (backend) ──────────────────────────────────────────────
 backend/vendor/
 backend/.env
 backend/.env.backup
+backend/.env.*.local
 backend/storage/logs/*.log
 backend/storage/framework/cache/
 backend/storage/framework/sessions/
@@ -10,18 +11,37 @@ backend/bootstrap/cache/*.php
 backend/public/hot
 backend/public/storage
 
-# ── Frontend (Vite / Node) ─────────────────────────────────────────
+# ── Node / Vite (frontend) ─────────────────────────────────────────
 frontend/node_modules/
 frontend/dist/
 frontend/.env.local
 frontend/.env.*.local
+frontend/nohup.out
 
-# ── ngrok / tmp ────────────────────────────────────────────────────
+# ── ngrok ──────────────────────────────────────────────────────────
 ngrok.yml
+/tmp/
 
-# ── OS / editor ────────────────────────────────────────────────────
+# ── OS ─────────────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Editors ────────────────────────────────────────────────────────
 .vscode/
 .idea/
-*.swp
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── Logs ───────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
