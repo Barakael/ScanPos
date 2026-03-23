@@ -21,9 +21,14 @@ class AppServiceProvider extends ServiceProvider
             return $user->role === 'super_admin';
         });
 
-        // super_admin and owner can manage settings
-        Gate::define('manage-settings', function ($user) {
-            return in_array($user->role, ['super_admin', 'owner']);
+        // Only super_admin can manage all shops
+        Gate::define('manage-shops', function ($user) {
+            return $user->role === 'super_admin';
+        });
+
+        // Only owner can manage their own shop / branches / staff
+        Gate::define('manage-my-shop', function ($user) {
+            return $user->role === 'owner';
         });
     }
 }
