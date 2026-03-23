@@ -32,7 +32,57 @@ api.interceptors.response.use(
 
 export default api;
 
-// ─── Users API ────────────────────────────────────────────────────────────────
+// ─── Shops API (super admin) ─────────────────────────────────────────────────
+export interface ShopCreatePayload {
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  owner_name: string;
+  owner_email: string;
+  owner_password: string;
+}
+
+export interface ShopUpdatePayload {
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
+export const shopsApi = {
+  getAll: () => api.get('/shops').then(r => r.data),
+  create: (data: ShopCreatePayload) => api.post('/shops', data).then(r => r.data),
+  update: (id: number, data: ShopUpdatePayload) => api.put(`/shops/${id}`, data).then(r => r.data),
+  delete: (id: number) => api.delete(`/shops/${id}`).then(r => r.data),
+};
+
+// ─── My Shop API (owner) ─────────────────────────────────────────────────────
+export interface BranchPayload {
+  name: string;
+  address?: string;
+  phone?: string;
+}
+
+export interface StaffPayload {
+  name: string;
+  email: string;
+  password?: string;
+  branch_id?: number | null;
+}
+
+export const myShopApi = {
+  get:           ()                           => api.get('/my-shop').then(r => r.data),
+  update:        (data: ShopUpdatePayload)    => api.put('/my-shop', data).then(r => r.data),
+  getBranches:   ()                           => api.get('/my-shop/branches').then(r => r.data),
+  createBranch:  (data: BranchPayload)        => api.post('/my-shop/branches', data).then(r => r.data),
+  updateBranch:  (id: number, data: Partial<BranchPayload>) => api.put(`/my-shop/branches/${id}`, data).then(r => r.data),
+  deleteBranch:  (id: number)                 => api.delete(`/my-shop/branches/${id}`).then(r => r.data),
+  getStaff:      ()                           => api.get('/my-shop/staff').then(r => r.data),
+  createStaff:   (data: StaffPayload)         => api.post('/my-shop/staff', data).then(r => r.data),
+  updateStaff:   (id: number, data: Partial<StaffPayload>) => api.put(`/my-shop/staff/${id}`, data).then(r => r.data),
+  deleteStaff:   (id: number)                 => api.delete(`/my-shop/staff/${id}`).then(r => r.data),
+};
 export interface UserPayload {
   name: string;
   email: string;
