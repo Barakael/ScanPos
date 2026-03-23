@@ -10,27 +10,37 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $today = today();
+        $user   = $request->user();
+        $shopId = $user->shop_id;
+        $today  = today();
 
-        // Today's totals
-        $todaySales = Sale::whereDate('created_at', $today)->get();
+        // For owner: aggregate across all branches of their shop (same shop_id)
+        // For cashier: scoped to their own branch via cashier_id lookup
+        $salesQuery = Sale::whereHas('cashier', fn($q) => $q->where('shop_id', $shopId));
+
+        $todaySales        = (clone $salesQuery)->whereDate('created_at', $today)->get();
         $todayTotal        = $todaySales->sum('total');
         $todayTransactions = $todaySales->count();
 
+        $productQuery = Product::where('shop_id', $shopId);
+
         // Low-stock products
-        $lowStock = Product::whereColumn('stock', '<=', 'low_stock_threshold')
+        $lowStock = (clone $productQuery)
+            ->whereColumn('stock', '<=', 'low_stock_threshold')
             ->orderBy('stock')
             ->get();
 
-        // Category breakdown  (sum of stock per category)
-        $categoryStock = Product::select('category', DB::raw('SUM(stock) as total_stock'))
+        // Category breakdown
+        $categoryStock = (clone $productQuery)
+            ->select('category', DB::raw('SUM(stock) as total_stock'))
             ->groupBy('category')
             ->get();
 
         // Last 7 days daily totals
-        $weeklySales = Sale::select(
+        $weeklySales = (clone $salesQuery)
+            ->select(
                 DB::raw('DATE(created_at) as date'),
                 DB::raw('SUM(total) as total'),
                 DB::raw('COUNT(*) as transactions')
@@ -43,7 +53,7 @@ class DashboardController extends Controller
         return response()->json([
             'today_total'        => $todayTotal,
             'today_transactions' => $todayTransactions,
-            'total_products'     => Product::count(),
+            'total_products'     => (clone $productQuery)->count(),
             'low_stock_count'    => $lowStock->count(),
             'low_stock_items'    => $lowStock,
             'category_stock'     => $categoryStock,
