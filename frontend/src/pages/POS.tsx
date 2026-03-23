@@ -69,7 +69,7 @@ const POS = () => {
     const div = document.createElement('div');
     div.id = '__receipt__';
     div.innerHTML = `
-      <h2>ScanPOS</h2>
+      <h2>TeraPayS</h2>
       <p>Receipt #${lastSale.id}</p>
       <p>${new Date(lastSale.timestamp).toLocaleString()}</p>
       <p>Cashier: ${lastSale.cashierName}</p>
