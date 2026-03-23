@@ -32,12 +32,29 @@ api.interceptors.response.use(
 
 export default api;
 
-// ─── Shops API (super admin) ─────────────────────────────────────────────────
-export interface ShopCreatePayload {
+// ─── Users API (super_admin) ──────────────────────────────────────────────────
+export interface UserPayload {
+  name: string;
+  email: string;
+  role: 'super_admin' | 'owner' | 'cashier';
+  password?: string;
+}
+
+export const usersApi = {
+  getAll: () => api.get('/users').then(r => r.data),
+  update: (id: string | number, data: Partial<UserPayload>) =>
+    api.put(`/users/${id}`, data).then(r => r.data),
+  delete: (id: string | number) => api.delete(`/users/${id}`).then(r => r.data),
+};
+
+// ─── Shops API (super_admin) ──────────────────────────────────────────────────
+export interface ShopPayload {
   name: string;
   address?: string;
   phone?: string;
   email?: string;
+  tax_rate?: number | string;
+  currency?: string;
   owner_name: string;
   owner_email: string;
   owner_password: string;
@@ -48,67 +65,58 @@ export interface ShopUpdatePayload {
   address?: string;
   phone?: string;
   email?: string;
+  tax_rate?: number | string;
+  currency?: string;
 }
 
 export const shopsApi = {
   getAll: () => api.get('/shops').then(r => r.data),
-  create: (data: ShopCreatePayload) => api.post('/shops', data).then(r => r.data),
+  getOne: (id: number) => api.get(`/shops/${id}`).then(r => r.data),
+  create: (data: ShopPayload) => api.post('/shops', data).then(r => r.data),
   update: (id: number, data: ShopUpdatePayload) => api.put(`/shops/${id}`, data).then(r => r.data),
   delete: (id: number) => api.delete(`/shops/${id}`).then(r => r.data),
 };
 
-// ─── My Shop API (owner) ─────────────────────────────────────────────────────
+// ─── Branches API (owner) ─────────────────────────────────────────────────────
 export interface BranchPayload {
   name: string;
   address?: string;
   phone?: string;
 }
 
+export const branchesApi = {
+  getAll: () => api.get('/branches').then(r => r.data),
+  create: (data: BranchPayload) => api.post('/branches', data).then(r => r.data),
+  update: (id: number, data: Partial<BranchPayload>) => api.put(`/branches/${id}`, data).then(r => r.data),
+  delete: (id: number) => api.delete(`/branches/${id}`).then(r => r.data),
+};
+
+// ─── Staff API (owner) ────────────────────────────────────────────────────────
 export interface StaffPayload {
   name: string;
   email: string;
   password?: string;
-  branch_id?: number | null;
+  branch_id: number;
 }
 
-export const myShopApi = {
-  get:           ()                           => api.get('/my-shop').then(r => r.data),
-  update:        (data: ShopUpdatePayload)    => api.put('/my-shop', data).then(r => r.data),
-  getBranches:   ()                           => api.get('/my-shop/branches').then(r => r.data),
-  createBranch:  (data: BranchPayload)        => api.post('/my-shop/branches', data).then(r => r.data),
-  updateBranch:  (id: number, data: Partial<BranchPayload>) => api.put(`/my-shop/branches/${id}`, data).then(r => r.data),
-  deleteBranch:  (id: number)                 => api.delete(`/my-shop/branches/${id}`).then(r => r.data),
-  getStaff:      ()                           => api.get('/my-shop/staff').then(r => r.data),
-  createStaff:   (data: StaffPayload)         => api.post('/my-shop/staff', data).then(r => r.data),
-  updateStaff:   (id: number, data: Partial<StaffPayload>) => api.put(`/my-shop/staff/${id}`, data).then(r => r.data),
-  deleteStaff:   (id: number)                 => api.delete(`/my-shop/staff/${id}`).then(r => r.data),
-};
-export interface UserPayload {
-  name: string;
-  email: string;
-  role: 'super_admin' | 'owner' | 'cashier';
-  password?: string;
-}
-
-export const usersApi = {
-  getAll: () => api.get('/users').then(r => r.data),
-  create: (data: UserPayload) => api.post('/users', data).then(r => r.data),
-  update: (id: string | number, data: Partial<UserPayload>) =>
-    api.put(`/users/${id}`, data).then(r => r.data),
-  delete: (id: string | number) => api.delete(`/users/${id}`).then(r => r.data),
+export const staffApi = {
+  getAll: () => api.get('/staff').then(r => r.data),
+  create: (data: StaffPayload) => api.post('/staff', data).then(r => r.data),
+  update: (id: number, data: Partial<StaffPayload>) => api.put(`/staff/${id}`, data).then(r => r.data),
+  delete: (id: number) => api.delete(`/staff/${id}`).then(r => r.data),
 };
 
-// ─── Settings API ─────────────────────────────────────────────────────────────
-export interface SettingsPayload {
-  store_name?: string;
-  store_address?: string;
-  store_phone?: string;
-  store_email?: string;
+// ─── Settings API (owner — their own shop) ────────────────────────────────────
+export interface OwnerSettingsPayload {
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   tax_rate?: number | string;
   currency?: string;
 }
 
 export const settingsApi = {
-  getAll: () => api.get('/settings').then(r => r.data),
-  update: (data: SettingsPayload) => api.put('/settings', data).then(r => r.data),
+  get: () => api.get('/settings').then(r => r.data),
+  update: (data: OwnerSettingsPayload) => api.put('/settings', data).then(r => r.data),
 };

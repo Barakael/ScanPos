@@ -5,32 +5,34 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  shopId?: number | null;
+  branchId?: number | null;
   avatar?: string;
-  shop_id?: string | null;
-  branch_id?: string | null;
 }
 
 export interface Shop {
   id: number;
   name: string;
-  owner_id: number | null;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  owner?: { id: number; name: string; email: string };
-  branches_count?: number;
-  staff_count?: number;
-  created_at: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  taxRate: number;
+  currency: string;
+  ownerId?: number | null;
+  owner?: { id: number; name: string; email: string } | null;
+  branchesCount?: number;
+  staffCount?: number;
+  createdAt?: string;
 }
 
 export interface Branch {
   id: number;
-  shop_id: number;
+  shopId: number;
   name: string;
-  address: string | null;
-  phone: string | null;
-  staff_count?: number;
-  created_at: string;
+  address?: string | null;
+  phone?: string | null;
+  cashierCount?: number;
+  createdAt?: string;
 }
 
 export interface Product {
