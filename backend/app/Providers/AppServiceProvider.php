@@ -16,18 +16,28 @@ class AppServiceProvider extends ServiceProvider
             return in_array($user->role, ['owner', 'super_admin']);
         });
 
-        // Only super_admin can manage users
+        // Only super_admin can manage users / view all users
         Gate::define('manage-users', function ($user) {
             return $user->role === 'super_admin';
         });
 
-        // Only super_admin can manage all shops
+        // Only super_admin can register / manage shops
         Gate::define('manage-shops', function ($user) {
             return $user->role === 'super_admin';
         });
 
-        // Only owner can manage their own shop / branches / staff
-        Gate::define('manage-my-shop', function ($user) {
+        // Owner manages their own branches
+        Gate::define('manage-branch', function ($user) {
+            return $user->role === 'owner';
+        });
+
+        // Owner manages their own staff (cashiers)
+        Gate::define('manage-staff', function ($user) {
+            return $user->role === 'owner';
+        });
+
+        // Owner can view/edit their own shop settings
+        Gate::define('manage-settings', function ($user) {
             return $user->role === 'owner';
         });
     }
