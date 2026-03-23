@@ -14,6 +14,7 @@ class Product extends Model
         'category',
         'image',
         'low_stock_threshold',
+        'shop_id',
     ];
 
     protected $casts = [

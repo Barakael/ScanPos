@@ -6,15 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Branch extends Model
 {
-    protected $fillable = ['shop_id', 'name', 'address', 'phone'];
+    protected $fillable = [
+        'shop_id', 'name', 'address', 'phone',
+    ];
 
+    /** The shop this branch belongs to */
     public function shop()
     {
         return $this->belongsTo(Shop::class);
     }
 
+    /** Cashiers assigned to this branch */
     public function staff()
     {
-        return $this->hasMany(User::class, 'branch_id');
+        return $this->hasMany(User::class);
     }
 }
