@@ -31,3 +31,34 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// ─── Users API ────────────────────────────────────────────────────────────────
+export interface UserPayload {
+  name: string;
+  email: string;
+  role: 'super_admin' | 'owner' | 'cashier';
+  password?: string;
+}
+
+export const usersApi = {
+  getAll: () => api.get('/users').then(r => r.data),
+  create: (data: UserPayload) => api.post('/users', data).then(r => r.data),
+  update: (id: string | number, data: Partial<UserPayload>) =>
+    api.put(`/users/${id}`, data).then(r => r.data),
+  delete: (id: string | number) => api.delete(`/users/${id}`).then(r => r.data),
+};
+
+// ─── Settings API ─────────────────────────────────────────────────────────────
+export interface SettingsPayload {
+  store_name?: string;
+  store_address?: string;
+  store_phone?: string;
+  store_email?: string;
+  tax_rate?: number | string;
+  currency?: string;
+}
+
+export const settingsApi = {
+  getAll: () => api.get('/settings').then(r => r.data),
+  update: (data: SettingsPayload) => api.put('/settings', data).then(r => r.data),
+};
