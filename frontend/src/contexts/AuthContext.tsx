@@ -40,8 +40,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name: data.user.name,
         email: data.user.email,
         role: data.user.role,
-        shop_id: data.user.shop_id != null ? String(data.user.shop_id) : null,
-        branch_id: data.user.branch_id != null ? String(data.user.branch_id) : null,
+        shopId: data.user.shop_id ?? null,
+        branchId: data.user.branch_id ?? null,
       };
       localStorage.setItem('pos_user', JSON.stringify(u));
       setUser(u);
