@@ -25,8 +25,10 @@ const AppSidebar = () => {
     { icon: ShoppingCart, label: 'Point of Sale', path: '/pos', roles: ['super_admin', 'owner', 'cashier'] },
     { icon: Package, label: 'Inventory', path: '/inventory', roles: ['super_admin', 'owner'] },
     { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['super_admin', 'owner', 'cashier'] },
+    { icon: Store, label: 'Shops', path: '/shops', roles: ['super_admin'] },
     { icon: Users, label: 'Users', path: '/users', roles: ['super_admin'] },
-    { icon: Settings, label: 'Settings', path: '/settings', roles: ['super_admin', 'owner'] },
+    { icon: Users, label: 'Staff', path: '/staff', roles: ['owner'] },
+    { icon: Settings, label: 'Settings', path: '/settings', roles: ['owner'] },
   ];
 
   const filteredNav = navItems.filter(item => item.roles.includes(user.role));

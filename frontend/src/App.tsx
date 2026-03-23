@@ -16,6 +16,8 @@ import Inventory from "./pages/Inventory";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+import Shops from "./pages/Shops";
+import Staff from "./pages/Staff";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -53,11 +55,13 @@ const App = () => (
                   {/* Protected — super_admin only */}
                   <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
                     <Route path="/users" element={<Users />} />
+                    <Route path="/shops" element={<Shops />} />
                   </Route>
 
-                  {/* Protected — super_admin + owner */}
-                  <Route element={<ProtectedRoute allowedRoles={['super_admin', 'owner']} />}>
+                  {/* Protected — owner only */}
+                  <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/staff" element={<Staff />} />
                   </Route>
 
                   <Route path="*" element={<NotFound />} />
