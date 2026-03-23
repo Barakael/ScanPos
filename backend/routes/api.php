@@ -1,13 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SaleController;
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\ShopController;
-use App\Http\Controllers\Api\MyShopController;
+use App\Http\Controllers\Api\StaffController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Public
@@ -38,39 +38,41 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
     });
 
-    // User management — super_admin only
+    // User management — super_admin only (read-only list + own-role mgmt)
     Route::middleware('can:manage-users')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
-        Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
     });
 
-    // Settings — super_admin only
-    Route::middleware('can:manage-settings')->group(function () {
-        Route::get('/settings', [SettingsController::class, 'index']);
-        Route::put('/settings', [SettingsController::class, 'update']);
-    });
-
-    // Shop management — super_admin only
+    // Shop management — super_admin
     Route::middleware('can:manage-shops')->group(function () {
         Route::get('/shops', [ShopController::class, 'index']);
         Route::post('/shops', [ShopController::class, 'store']);
+        Route::get('/shops/{shop}', [ShopController::class, 'show']);
         Route::put('/shops/{shop}', [ShopController::class, 'update']);
         Route::delete('/shops/{shop}', [ShopController::class, 'destroy']);
     });
 
-    // My shop — owner only
-    Route::middleware('can:manage-my-shop')->group(function () {
-        Route::get('/my-shop', [MyShopController::class, 'show']);
-        Route::put('/my-shop', [MyShopController::class, 'update']);
-        Route::get('/my-shop/branches', [MyShopController::class, 'branches']);
-        Route::post('/my-shop/branches', [MyShopController::class, 'createBranch']);
-        Route::put('/my-shop/branches/{branch}', [MyShopController::class, 'updateBranch']);
-        Route::delete('/my-shop/branches/{branch}', [MyShopController::class, 'destroyBranch']);
-        Route::get('/my-shop/staff', [MyShopController::class, 'staff']);
-        Route::post('/my-shop/staff', [MyShopController::class, 'createStaff']);
-        Route::put('/my-shop/staff/{user}', [MyShopController::class, 'updateStaff']);
-        Route::delete('/my-shop/staff/{user}', [MyShopController::class, 'destroyStaff']);
+    // Branch management — owner
+    Route::middleware('can:manage-branch')->group(function () {
+        Route::get('/branches', [BranchController::class, 'index']);
+        Route::post('/branches', [BranchController::class, 'store']);
+        Route::put('/branches/{branch}', [BranchController::class, 'update']);
+        Route::delete('/branches/{branch}', [BranchController::class, 'destroy']);
+    });
+
+    // Staff management — owner
+    Route::middleware('can:manage-staff')->group(function () {
+        Route::get('/staff', [StaffController::class, 'index']);
+        Route::post('/staff', [StaffController::class, 'store']);
+        Route::put('/staff/{user}', [StaffController::class, 'update']);
+        Route::delete('/staff/{user}', [StaffController::class, 'destroy']);
+    });
+
+    // Shop settings — owner (edit own shop)
+    Route::middleware('can:manage-settings')->group(function () {
+        Route::get('/settings', [ShopController::class, 'showOwnerShop']);
+        Route::put('/settings', [ShopController::class, 'updateOwnerShop']);
     });
 });
