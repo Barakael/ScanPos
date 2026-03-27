@@ -40,5 +40,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-settings', function ($user) {
             return $user->role === 'owner';
         });
+
+        // super_admin can manage subscriptions / assign plans
+        Gate::define('manage-subscriptions', function ($user) {
+            return $user->role === 'super_admin';
+        });
+
+        // owner can view their own subscription
+        Gate::define('view-subscription', function ($user) {
+            return in_array($user->role, ['owner', 'super_admin']);
+        });
     }
 }
