@@ -37,7 +37,7 @@ const AdminSettings = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   // System settings state
-  const [sysForm, setSysForm] = useState({ tax_rate: '18', currency: 'TZS' });
+  const [sysForm, setSysForm] = useState({ currency: 'TZS' });
 
   // ── Queries ──────────────────────────────────────────────────────────────────
   const { data: shops = [], isLoading: shopsLoading } = useQuery<Shop[]>({
@@ -53,7 +53,6 @@ const AdminSettings = () => {
   useEffect(() => {
     if (sysSettings) {
       setSysForm({
-        tax_rate: sysSettings.tax_rate ?? '18',
         currency: sysSettings.currency ?? 'TZS',
       });
     }
@@ -111,11 +110,6 @@ const AdminSettings = () => {
   };
 
   const handleSaveSettings = () => {
-    const rate = Number(sysForm.tax_rate);
-    if (isNaN(rate) || rate < 0 || rate > 100) {
-      toast.error('Tax rate must be between 0 and 100');
-      return;
-    }
     saveSettings.mutate(sysForm);
   };
 
@@ -248,36 +242,20 @@ const AdminSettings = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Percent className="w-4 h-4" /> Global Tax &amp; Currency
+              Currency Settings
             </CardTitle>
-            <CardDescription>Applied to all shops unless overridden</CardDescription>
+            <CardDescription>Default currency for new shops</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sys_tax">Tax Rate (%)</Label>
-                <div className="relative">
-                  <Input
-                    id="sys_tax"
-                    type="number"
-                    min={0} max={100} step={0.01}
-                    value={sysForm.tax_rate}
-                    onChange={e => setSysForm(p => ({ ...p, tax_rate: e.target.value }))}
-                    className="pr-8"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sys_currency">Currency Code</Label>
-                <Input
-                  id="sys_currency"
-                  value={sysForm.currency}
-                  onChange={e => setSysForm(p => ({ ...p, currency: e.target.value }))}
-                  placeholder="TZS"
-                  maxLength={10}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="sys_currency">Currency Code</Label>
+              <Input
+                id="sys_currency"
+                value={sysForm.currency}
+                onChange={e => setSysForm(p => ({ ...p, currency: e.target.value }))}
+                placeholder="TZS"
+                maxLength={10}
+              />
             </div>
             <Button onClick={handleSaveSettings} disabled={saveSettings.isPending} className="gap-2">
               <Save className="w-4 h-4" />
