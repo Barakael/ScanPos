@@ -120,8 +120,7 @@ class _POSPageState extends State<POSPage> {
 
   double get _subtotal =>
       _cart.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
-  double get _tax => _subtotal * 0.18;
-  double get _total => _subtotal + _tax;
+  double get _total => _subtotal;
 
   void _handleBarcodeSubmit() {
     final barcode = _barcodeController.text.trim();
@@ -216,7 +215,6 @@ class _POSPageState extends State<POSPage> {
               })
           .toList(),
       'subtotal': _subtotal,
-      'tax': _tax,
       'total': _total,
       'payment_method': paymentMethod,
       'cashier_id': authState.user.id,
@@ -425,9 +423,6 @@ class _POSPageState extends State<POSPage> {
                             ),
                             child: Column(
                               children: [
-                                _buildSummaryRow('Subtotal:', _subtotal),
-                                _buildSummaryRow('Tax (18%):', _tax),
-                                const Divider(),
                                 _buildSummaryRow('Total:', _total,
                                     isTotal: true),
                                 const SizedBox(height: 16),
