@@ -38,4 +38,22 @@ class Shop extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    /** Cashier users belonging to this shop */
+    public function cashiers()
+    {
+        return $this->hasMany(User::class)->where('role', 'cashier');
+    }
+
+    /** Active/latest subscription */
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class)->latestOfMany();
+    }
+
+    /** All subscription payments */
+    public function subscriptionPayments()
+    {
+        return $this->hasMany(SubscriptionPayment::class);
+    }
 }
