@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -30,9 +31,11 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        $shopId = $request->user()->shop_id;
+
         $data = $request->validate([
             'name'                => 'required|string|max:255',
-            'barcode'             => 'required|string|unique:products,barcode',
+            'barcode'             => ['required', 'string', Rule::unique('products')->where('shop_id', $shopId)],
             'price'               => 'required|numeric|min:0',
             'stock'               => 'required|integer|min:0',
             'category'            => 'required|string|max:100',
@@ -40,7 +43,7 @@ class ProductController extends Controller
             'low_stock_threshold' => 'nullable|integer|min:0',
         ]);
 
-        $data['shop_id'] = $request->user()->shop_id;
+        $data['shop_id'] = $shopId;
 
         $product = Product::create($data);
 
