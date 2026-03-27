@@ -40,6 +40,18 @@ import '../../features/analytics/data/repositories/analytics_repository_impl.dar
 import '../../features/analytics/domain/repositories/analytics_repository.dart';
 import '../../features/analytics/presentation/bloc/analytics_bloc.dart';
 
+import '../../features/staff/data/repositories/staff_repository_impl.dart';
+import '../../features/staff/domain/repositories/staff_repository.dart';
+import '../../features/staff/presentation/bloc/staff_bloc.dart';
+
+import '../../features/shops/data/repositories/shop_repository_impl.dart';
+import '../../features/shops/domain/repositories/shop_repository.dart';
+import '../../features/shops/presentation/bloc/shop_bloc.dart';
+
+import '../../features/users/data/repositories/user_repository_impl.dart';
+import '../../features/users/domain/repositories/user_repository.dart';
+import '../../features/users/presentation/bloc/user_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> setupDependencies({required String baseUrl}) async {
@@ -137,7 +149,31 @@ Future<void> setupDependencies({required String baseUrl}) async {
         remoteDataSource: sl<AnalyticsRemoteDataSource>()),
   );
 
-  sl.registerFactory<AnalyticsBloc>(
+  sl.registerFactory<AnalyticsBloc>(       
     () => AnalyticsBloc(analyticsRepository: sl<AnalyticsRepository>()),
+  );
+
+  sl.registerSingleton<StaffRepository>(
+    StaffRepositoryImpl(sl<ApiClient>()),
+  );
+
+  sl.registerFactory<StaffBloc>(
+    () => StaffBloc(sl<StaffRepository>()),
+  );
+
+  sl.registerSingleton<ShopRepository>(
+    ShopRepositoryImpl(sl<ApiClient>()),
+  );
+
+  sl.registerFactory<ShopBloc>(
+    () => ShopBloc(sl<ShopRepository>()),
+  );
+
+  sl.registerSingleton<UserRepository>(
+    UserRepositoryImpl(sl<ApiClient>()),
+  );
+
+  sl.registerFactory<UserBloc>(
+    () => UserBloc(sl<UserRepository>()),
   );
 }

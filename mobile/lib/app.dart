@@ -8,6 +8,9 @@ import 'features/analytics/presentation/bloc/analytics_bloc.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/products/presentation/bloc/products_bloc.dart';
 import 'features/sales/presentation/bloc/sales_bloc.dart';
+import 'features/staff/presentation/bloc/staff_bloc.dart';
+import 'features/shops/presentation/bloc/shop_bloc.dart';
+import 'features/users/presentation/bloc/user_bloc.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -25,7 +28,7 @@ class _AppState extends State<App> {
     super.initState();
     // Initialize the router using the already-registered SecureStorage
     _appRouter = AppRouter(secureStorage: sl<SecureStorage>());
-    
+                        
     setState(() {
       _isInitialized = true;
     });
@@ -53,6 +56,9 @@ class _AppState extends State<App> {
         BlocProvider<SalesBloc>(create: (_) => sl<SalesBloc>()),
         BlocProvider<ProductsBloc>(create: (_) => sl<ProductsBloc>()),
         BlocProvider<AnalyticsBloc>(create: (_) => sl<AnalyticsBloc>()),
+        BlocProvider<StaffBloc>(create: (_) => sl<StaffBloc>()),
+        BlocProvider<ShopBloc>(create: (_) => sl<ShopBloc>()),
+        BlocProvider<UserBloc>(create: (_) => sl<UserBloc>()),
       ],
       child: MaterialApp.router(
         title: 'Tera POS',
