@@ -5,7 +5,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, LogOut, Settings, ChevronLeft, ChevronRight, Store,
-  Menu, X, Moon, Sun, Maximize, Minimize
+  Menu, X, Moon, Sun, Maximize, Minimize, ScrollText, BarChart2, CreditCard, Receipt
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -21,14 +21,18 @@ const AppSidebar = () => {
   if (!user) return null;
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['super_admin', 'owner', 'cashier'] },
-    { icon: ShoppingCart, label: 'Point of Sale', path: '/pos', roles: ['super_admin', 'owner', 'cashier'] },
-    { icon: Package, label: 'Inventory', path: '/inventory', roles: ['super_admin', 'owner'] },
-    { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['super_admin', 'owner', 'cashier'] },
-    { icon: Store, label: 'Shops', path: '/shops', roles: ['super_admin'] },
-    { icon: Users, label: 'Users', path: '/users', roles: ['super_admin'] },
-    { icon: Users, label: 'Staff', path: '/staff', roles: ['owner'] },
-    { icon: Settings, label: 'Settings', path: '/settings', roles: ['owner'] },
+    { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',      roles: ['super_admin', 'owner', 'cashier'] },
+    { icon: ShoppingCart,    label: 'Point of Sale',  path: '/pos',            roles: ['owner', 'cashier'] },
+    { icon: Package,         label: 'Inventory',      path: '/inventory',      roles: ['owner'] },
+    { icon: Receipt,         label: 'Transactions',   path: '/transactions',   roles: ['owner', 'cashier'] },
+    { icon: BarChart3,       label: 'Reports',        path: '/reports',        roles: ['owner', 'cashier'] },
+    { icon: Store,           label: 'Shops',          path: '/shops',          roles: ['super_admin'] },
+    { icon: Users,           label: 'Users',          path: '/users',          roles: ['super_admin'] },
+    { icon: CreditCard,      label: 'Payments',       path: '/payments',       roles: ['super_admin', 'owner'] },
+    { icon: ScrollText,      label: 'System Logs',    path: '/logs',           roles: ['super_admin'] },
+    { icon: BarChart2,       label: 'System Reports', path: '/system-reports', roles: ['super_admin'] },
+    { icon: Users,           label: 'Staff',          path: '/staff',          roles: ['owner'] },
+    { icon: Settings,        label: 'Settings',       path: '/settings',       roles: ['owner'] },
   ];
 
   const filteredNav = navItems.filter(item => item.roles.includes(user.role));
