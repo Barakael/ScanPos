@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/data/mockData';
 import { Product } from '@/types';
 import {
@@ -17,6 +18,8 @@ const emptyProduct = { name: '', barcode: '', price: 0, stock: 0, category: '', 
 
 const Inventory = () => {
   const { products, addProduct, updateProduct, deleteProduct } = useStore();
+  const { user } = useAuth();
+  const canManage = user?.role === 'owner' || user?.role === 'super_admin';
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -53,8 +56,8 @@ const Inventory = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.barcode || form.price <= 0) {
-      toast.error('Please fill all required fields');
+    if (!form.name || !form.barcode || !form.category || form.price <= 0) {
+      toast.error(!form.category ? 'Category is required' : 'Please fill all required fields (name, barcode, price > 0, category)');
       return;
     }
     try {
@@ -90,9 +93,11 @@ const Inventory = () => {
             <h1 className="text-2xl font-bold text-foreground">Inventory</h1>
             <p className="text-sm text-muted-foreground">{products.length} products · {products.reduce((s, p) => s + p.stock, 0)} total units</p>
           </div>
-          <Button onClick={openAdd} className="gap-2">
-            <Plus className="w-4 h-4" /> Add Product
-          </Button>
+          {canManage && (
+            <Button onClick={openAdd} className="gap-2">
+              <Plus className="w-4 h-4" /> Add Product
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -163,12 +168,16 @@ const Inventory = () => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(product)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(product.id, product.name)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canManage && (
+                          <>
+                            <button onClick={() => openEdit(product)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDelete(product.id, product.name)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </motion.tr>
