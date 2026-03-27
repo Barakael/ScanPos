@@ -3,8 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\Shop;
+use App\Models\Subscription;
+use App\Models\SubscriptionPayment;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -12,13 +18,82 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $user   = $request->user();
+        $user = $request->user();
+
+        // ── Super admin: platform-wide managerial dashboard ───────────────────
+        if ($user->role === 'super_admin') {
+            $today = today();
+
+            $totalShops        = Shop::count();
+            $totalUsers        = User::count();
+            $todaySales        = Sale::whereDate('created_at', $today)->get();
+            $todayTotal        = $todaySales->sum('total');
+            $todayTransactions = $todaySales->count();
+
+            // MRR: sum of active subscription plan prices
+            $activeSubscriptions = Subscription::where('status', 'active')
+                ->with('plan')
+                ->get();
+            $mrr = $activeSubscriptions->sum(fn ($s) => $s->plan?->price ?? 0);
+            $activeSubCount = $activeSubscriptions->count();
+
+            // Overdue payments count
+            $overdueCount = SubscriptionPayment::where('status', 'pending')
+                ->where('due_date', '<', today())
+                ->count();
+
+            // Top 5 products system-wide by quantity sold
+            $topProducts = SaleItem::select('product_id', DB::raw('SUM(quantity) as total_sold'), DB::raw('SUM(unit_price * quantity) as total_revenue'))
+                ->with('product:id,name,category')
+                ->groupBy('product_id')
+                ->orderByDesc('total_sold')
+                ->limit(5)
+                ->get()
+                ->map(fn ($item) => [
+                    'product_id'    => $item->product_id,
+                    'name'          => $item->product?->name ?? 'Unknown',
+                    'category'      => $item->product?->category ?? '—',
+                    'total_sold'    => (int) $item->total_sold,
+                    'total_revenue' => (float) $item->total_revenue,
+                ]);
+
+            // Last 7 days system-wide
+            $weeklySales = Sale::select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('SUM(total) as total'),
+                    DB::raw('COUNT(*) as transactions')
+                )
+                ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+                ->groupBy(DB::raw('DATE(created_at)'))
+                ->orderBy('date')
+                ->get();
+
+            // Recent activity
+            $recentActivity = ActivityLog::with('user:id,name,role')
+                ->orderByDesc('created_at')
+                ->limit(8)
+                ->get();
+
+            return response()->json([
+                'role'                => 'super_admin',
+                'total_shops'         => $totalShops,
+                'total_users'         => $totalUsers,
+                'today_total'         => $todayTotal,
+                'today_transactions'  => $todayTransactions,
+                'mrr'                 => $mrr,
+                'active_subscriptions'=> $activeSubCount,
+                'overdue_payments'    => $overdueCount,
+                'top_products'        => $topProducts,
+                'weekly_sales'        => $weeklySales,
+                'recent_activity'     => $recentActivity,
+            ]);
+        }
+
+        // ── Owner / cashier: store-scoped dashboard ───────────────────────────
         $shopId = $user->shop_id;
         $today  = today();
 
-        // For owner: aggregate across all branches of their shop (same shop_id)
-        // For cashier: scoped to their own branch via cashier_id lookup
-        $salesQuery = Sale::whereHas('cashier', fn($q) => $q->where('shop_id', $shopId));
+        $salesQuery = Sale::whereHas('cashier', fn ($q) => $q->where('shop_id', $shopId));
 
         $todaySales        = (clone $salesQuery)->whereDate('created_at', $today)->get();
         $todayTotal        = $todaySales->sum('total');
@@ -26,19 +101,16 @@ class DashboardController extends Controller
 
         $productQuery = Product::where('shop_id', $shopId);
 
-        // Low-stock products
         $lowStock = (clone $productQuery)
             ->whereColumn('stock', '<=', 'low_stock_threshold')
             ->orderBy('stock')
             ->get();
 
-        // Category breakdown
         $categoryStock = (clone $productQuery)
             ->select('category', DB::raw('SUM(stock) as total_stock'))
             ->groupBy('category')
             ->get();
 
-        // Last 7 days daily totals
         $weeklySales = (clone $salesQuery)
             ->select(
                 DB::raw('DATE(created_at) as date'),
@@ -50,7 +122,25 @@ class DashboardController extends Controller
             ->orderBy('date')
             ->get();
 
+        // Top 5 products for this shop
+        $saleIds = (clone $salesQuery)->pluck('id');
+        $topProducts = SaleItem::select('product_id', DB::raw('SUM(quantity) as total_sold'), DB::raw('SUM(unit_price * quantity) as total_revenue'))
+            ->with('product:id,name,category')
+            ->whereIn('sale_id', $saleIds)
+            ->groupBy('product_id')
+            ->orderByDesc('total_sold')
+            ->limit(5)
+            ->get()
+            ->map(fn ($item) => [
+                'product_id'    => $item->product_id,
+                'name'          => $item->product?->name ?? 'Unknown',
+                'category'      => $item->product?->category ?? '—',
+                'total_sold'    => (int) $item->total_sold,
+                'total_revenue' => (float) $item->total_revenue,
+            ]);
+
         return response()->json([
+            'role'               => $user->role,
             'today_total'        => $todayTotal,
             'today_transactions' => $todayTransactions,
             'total_products'     => (clone $productQuery)->count(),
@@ -58,6 +148,7 @@ class DashboardController extends Controller
             'low_stock_items'    => $lowStock,
             'category_stock'     => $categoryStock,
             'weekly_sales'       => $weeklySales,
+            'top_products'       => $topProducts,
         ]);
     }
 }
