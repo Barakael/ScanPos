@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_text_field.dart';
-import '../../../../shared/widgets/loading_overlay.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../products/presentation/bloc/products_bloc.dart';
@@ -14,468 +11,324 @@ import '../../../products/domain/entities/product_entity.dart';
 import '../../../sales/presentation/bloc/sales_bloc.dart';
 import '../../../sales/presentation/bloc/sales_event.dart';
 import '../../../sales/presentation/bloc/sales_state.dart';
-import '../widgets/cart_item_widget.dart';
-import '../widgets/product_grid_widget.dart';
+import '../widgets/barcode_scanner_widget.dart';
 import '../widgets/payment_method_dialog.dart';
 import '../widgets/receipt_dialog.dart';
-import '../widgets/barcode_scanner_widget.dart';
 import '../../domain/models/cart_item.dart';
+// Note: Ensure these custom widgets exist or replace with standard ones
+// import '../widgets/cart_sheet.dart'; 
+// import '../widgets/add_product_dialog.dart';
+
+class _T {
+  static const bg         = Color(0xFFF5F6FA);
+  static const white      = Color(0xFFFFFFFF);
+  static const card       = Color(0xFFFFFFFF);
+  static const primary    = Color(0xFF1E3A5F);
+  static const primaryLt  = Color(0xFF2B527A);
+  static const accent     = Color(0xFF00C896);
+  static const accentSoft = Color(0x1A00C896);
+  static const danger     = Color(0xFFFF4D4D);
+  static const dangerSoft = Color(0x1AFF4D4D);
+  static const warn       = Color(0xFFFFA726);
+  static const warnSoft   = Color(0x1AFFA726);
+  static const ink        = Color(0xFF1A2332);
+  static const inkMid     = Color(0xFF64748B);
+  static const inkLight   = Color(0xFFCBD5E1);
+  static const border     = Color(0xFFE8EDF5);
+
+  static TextStyle ts(double size, {FontWeight weight = FontWeight.w400, Color color = ink}) =>
+      TextStyle(fontSize: size, fontWeight: weight, color: color);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(color: const Color(0xFF1E3A5F).withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
+      ];
+
+  static List<BoxShadow> get floatShadow => [
+        BoxShadow(color: const Color(0xFF1E3A5F).withOpacity(0.14), blurRadius: 24, offset: const Offset(0, 8)),
+      ];
+}
 
 class POSPage extends StatefulWidget {
   const POSPage({super.key});
-
   @override
   State<POSPage> createState() => _POSPageState();
 }
 
-class _POSPageState extends State<POSPage> {
+class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
   final List<CartItem> _cart = [];
-  final _searchController = TextEditingController();
-  final _barcodeController = TextEditingController();
+  final _searchCtrl = TextEditingController();
   String _searchQuery = '';
   bool _showScanner = false;
+
+  late final AnimationController _cartBadgeCtrl;
+  late final Animation<double>   _cartBadgeAnim;
 
   @override
   void initState() {
     super.initState();
     context.read<ProductsBloc>().add(const ProductsFetchRequested());
+    _cartBadgeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _cartBadgeAnim = Tween<double>(begin: 1.0, end: 1.4).animate(
+      CurvedAnimation(parent: _cartBadgeCtrl, curve: Curves.elasticOut),
+    );
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
-    _barcodeController.dispose();
+    _searchCtrl.dispose();
+    _cartBadgeCtrl.dispose();
     super.dispose();
   }
 
-  // FIX: accept ProductEntity (not the old Product type from cart_item.dart)
+  // --- Logic Helpers ---
+  double get _subtotal => _cart.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
+  double get _total => _subtotal; 
+  int get _itemCount => _cart.fold(0, (sum, item) => sum + item.quantity);
+
   void _addToCart(ProductEntity product) {
+    HapticFeedback.lightImpact();
     setState(() {
-      final existingIndex =
-          _cart.indexWhere((item) => item.product.id == product.id);
-      if (existingIndex != -1) {
-        if (_cart[existingIndex].quantity < product.stock) {
-          _cart[existingIndex] = CartItem(
-            product: product,
-            quantity: _cart[existingIndex].quantity + 1,
-          );
+      final idx = _cart.indexWhere((i) => i.product.id == product.id);
+      if (idx != -1) {
+        if (_cart[idx].quantity < product.stock) {
+          _cart[idx] = CartItem(product: product, quantity: _cart[idx].quantity + 1);
+          _cartBadgeCtrl.forward(from: 0);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Insufficient stock'),
-              backgroundColor: AppColors.error,
-            ),
-          );
+          _toast('Max stock reached', isError: true);
         }
       } else {
         if (product.stock > 0) {
           _cart.add(CartItem(product: product, quantity: 1));
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Product out of stock'),
-              backgroundColor: AppColors.error,
-            ),
-          );
+          _cartBadgeCtrl.forward(from: 0);
         }
       }
     });
   }
 
-  void _updateQuantity(String productId, int quantity) {
+  void _updateQty(String id, int qty) {
     setState(() {
-      final index =
-          _cart.indexWhere((item) => item.product.id == productId);
-      if (index != -1) {
-        if (quantity <= 0) {
-          _cart.removeAt(index);
-        } else if (quantity <= _cart[index].product.stock) {
-          _cart[index] = CartItem(
-            product: _cart[index].product,
-            quantity: quantity,
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Insufficient stock'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
+      final idx = _cart.indexWhere((i) => i.product.id == id);
+      if (idx == -1) return;
+      if (qty <= 0) {
+        _cart.removeAt(idx);
+      } else if (qty <= _cart[idx].product.stock) {
+        _cart[idx] = CartItem(product: _cart[idx].product, quantity: qty);
       }
     });
   }
 
-  void _removeFromCart(String productId) {
-    setState(() {
-      _cart.removeWhere((item) => item.product.id == productId);
-    });
-  }
+  void _removeFromCart(String id) => setState(() => _cart.removeWhere((i) => i.product.id == id));
+  void _clearCart() => setState(() => _cart.clear());
 
-  void _clearCart() {
-    setState(() {
-      _cart.clear();
-    });
-  }
+  void _processSale(String paymentMethod) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
 
-  double get _subtotal =>
-      _cart.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
-  double get _total => _subtotal;
-
-  void _handleBarcodeSubmit() {
-    final barcode = _barcodeController.text.trim();
-    if (barcode.isEmpty) return;
-
-    final productsState = context.read<ProductsBloc>().state;
-    if (productsState is ProductsLoaded) {
-      try {
-        final product = productsState.products.firstWhere(
-          // FIX: null-safe barcode comparison
-          (p) => p.barcode == barcode,
-        );
-        _addToCart(product);
-        _barcodeController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added: ${product.name}'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Barcode not found'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
-  }
-
-  void _onBarcodeScanned(String barcode) {
-    setState(() => _showScanner = false);
-
-    final productsState = context.read<ProductsBloc>().state;
-    if (productsState is ProductsLoaded) {
-      try {
-        final product = productsState.products.firstWhere(
-          (p) => p.barcode == barcode,
-        );
-        _addToCart(product);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added: ${product.name}'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Barcode not found'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
+    context.read<SalesBloc>().add(SaleCreateRequested({
+      'items': _cart.map((i) => {
+        'product_id': i.product.id,
+        'quantity':   i.quantity,
+        'price':      i.product.price,
+      }).toList(),
+      'subtotal':       _subtotal,
+      'total':          _total,
+      'payment_method': paymentMethod,
+      'cashier_id':     authState.user.id,
+    }));
   }
 
   void _showPaymentDialog() {
-    if (_cart.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cart is empty'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
+    if (_cart.isEmpty) return;
     showDialog(
       context: context,
-      builder: (context) => PaymentMethodDialog(
+      builder: (_) => PaymentMethodDialog(
         total: _total,
         onPaymentMethodSelected: (method) {
-          Navigator.of(context).pop();
+          Navigator.pop(context);
           _processSale(method);
         },
       ),
     );
   }
 
-  void _processSale(String paymentMethod) {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is! AuthAuthenticated) return;
-
-    final saleData = {
-      'items': _cart
-          .map((item) => {
-                'product_id': item.product.id,
-                'quantity': item.quantity,
-                'price': item.product.price,
-              })
-          .toList(),
-      'subtotal': _subtotal,
-      'total': _total,
-      'payment_method': paymentMethod,
-      'cashier_id': authState.user.id,
-    };
-
-    context.read<SalesBloc>().add(SaleCreateRequested(saleData));
+  void _toast(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: isError ? _T.danger : _T.accent),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (_showScanner) {
       return BarcodeScannerWidget(
-        onBarcodeDetected: _onBarcodeScanned,
+        onBarcodeDetected: (barcode) {
+          setState(() => _showScanner = false);
+          final s = context.read<ProductsBloc>().state;
+          if (s is ProductsLoaded) {
+            try {
+              _addToCart(s.products.firstWhere((p) => p.barcode == barcode));
+            } catch (_) { _toast('Not found', isError: true); }
+          }
+        },
         onClose: () => setState(() => _showScanner = false),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Point of Sale'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history, color: AppColors.white),
-            onPressed: () => context.push(RouteNames.sales),
-          ),
-        ],
+    return BlocListener<SalesBloc, SalesState>(
+      listener: (context, state) {
+        if (state is SaleCreated) {
+          _clearCart();
+          showDialog(context: context, builder: (_) => ReceiptDialog(sale: state.sale));
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _T.bg,
+        body: SafeArea(
+          child: Column(children: [
+            _TopBar(
+              onHistoryTap: () => context.push(RouteNames.sales),
+              onScanTap: () => setState(() => _showScanner = true),
+              onAddTap: () {}, // Implement logic to open add product dialog
+            ),
+            _SearchRow(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+            ),
+            Expanded(
+              child: _ProductsBody(
+                searchQuery: _searchQuery,
+                onAddToCart: _addToCart,
+                cart: _cart,
+              ),
+            ),
+          ]),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: _itemCount > 0 ? _CartFAB(
+          itemCount: _itemCount,
+          total: _total,
+          badgeAnim: _cartBadgeAnim,
+          onTap: () {
+            // Implement BottomSheet or navigation to Cart logic here
+          },
+        ) : null,
       ),
-      body: BlocListener<SalesBloc, SalesState>(
-        listener: (context, state) {
-          if (state is SaleCreated) {
-            showDialog(
-              context: context,
-              builder: (context) => ReceiptDialog(
-                sale: state.sale,
-                onClose: () {
-                  Navigator.of(context).pop();
-                  _clearCart();
-                },
-              ),
-            );
-          } else if (state is SalesError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
-          }
-        },
+    );
+  }
+}
+
+// --- Sub-Widgets ---
+
+class _TopBar extends StatelessWidget {
+  final VoidCallback onHistoryTap, onScanTap, onAddTap;
+  const _TopBar({required this.onHistoryTap, required this.onScanTap, required this.onAddTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: _T.primary,
+      child: Row(children: [
+        const Text('Point of Sale', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        const Spacer(),
+        IconButton(icon: const Icon(Icons.history, color: Colors.white), onPressed: onHistoryTap),
+        IconButton(icon: const Icon(Icons.qr_code_scanner, color: Colors.white), onPressed: onScanTap),
+      ]),
+    );
+  }
+}
+
+class _SearchRow extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  const _SearchRow({required this.controller, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: 'Search...',
+          prefixIcon: const Icon(Icons.search),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductsBody extends StatelessWidget {
+  final String searchQuery;
+  final Function(ProductEntity) onAddToCart;
+  final List<CartItem> cart;
+  const _ProductsBody({required this.searchQuery, required this.onAddToCart, required this.cart});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProductsBloc, ProductsState>(
+      builder: (context, state) {
+        if (state is ProductsLoaded) {
+          final products = state.products.where((p) => p.name.toLowerCase().contains(searchQuery)).toList();
+          return GridView.builder(
+            padding: const EdgeInsets.all(12),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.8),
+            itemCount: products.length,
+            itemBuilder: (context, i) => _ProductCard(
+              product: products[i],
+              cartQty: cart.where((c) => c.product.id == products[i].id).fold(0, (s, item) => s + item.quantity),
+              onTap: () => onAddToCart(products[i]),
+            ),
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final ProductEntity product;
+  final int cartQty;
+  final VoidCallback onTap;
+  const _ProductCard({required this.product, required this.cartQty, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: onTap,
         child: Column(
           children: [
-            // Barcode Input
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: AppColors.primary.withAlpha(20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: _barcodeController,
-                      label: 'Scan or enter barcode',
-                      prefixIcon: const Icon(Icons.qr_code_scanner),
-                      onSubmitted: (_) => _handleBarcodeSubmit(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  AppButton(
-                    label: 'Add',
-                    onPressed: _handleBarcodeSubmit,
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.camera_alt),
-                    onPressed: () => setState(() => _showScanner = true),
-                  ),
-                ],
-              ),
-            ),
-
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: AppTextField(
-                controller: _searchController,
-                label: 'Search products',
-                prefixIcon: const Icon(Icons.search),
-                onChanged: (value) {
-                  setState(() => _searchQuery = value.toLowerCase());
-                },
-              ),
-            ),
-
-            // Main Content
-            Expanded(
-              child: Row(
-                children: [
-                  // Products Grid
-                  Expanded(
-                    flex: 2,
-                    child: BlocBuilder<ProductsBloc, ProductsState>(
-                      builder: (context, state) {
-                        if (state is ProductsLoading) {
-                          return const AppLoadingIndicator();
-                        } else if (state is ProductsError) {
-                          return Center(
-                            child: Text(
-                              'Error loading products',
-                              style: TextStyle(color: AppColors.error),
-                            ),
-                          );
-                        } else if (state is ProductsLoaded) {
-                          final filteredProducts =
-                              state.products.where((product) {
-                            final nameMatch = product.name
-                                .toLowerCase()
-                                .contains(_searchQuery);
-                            // FIX: null-safe barcode search
-                            final barcodeMatch =
-                                product.barcode?.contains(_searchQuery) ??
-                                    false;
-                            return nameMatch || barcodeMatch;
-                          }).toList();
-
-                          return ProductGridWidget(
-                            products: filteredProducts,
-                            onProductTap: _addToCart,
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-
-                  // Cart
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withAlpha(10),
-                        border: Border(
-                            left: BorderSide(
-                                color: Colors.grey.withAlpha(30))),
-                      ),
-                      child: Column(
-                        children: [
-                          // Cart Header
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(10),
-                              border: Border(
-                                  bottom: BorderSide(
-                                      color: Colors.grey.withAlpha(30))),
-                            ),
-                            child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Cart',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                if (_cart.isNotEmpty)
-                                  TextButton(
-                                    onPressed: _clearCart,
-                                    child: const Text('Clear'),
-                                  ),
-                              ],
-                            ),
-                          ),
-
-                          // Cart Items
-                          Expanded(
-                            child: _cart.isEmpty
-                                ? const Center(
-                                    child: Text('No items in cart'))
-                                : ListView.builder(
-                                    padding: const EdgeInsets.all(8),
-                                    itemCount: _cart.length,
-                                    itemBuilder: (context, index) {
-                                      final item = _cart[index];
-                                      return CartItemWidget(
-                                        item: item,
-                                        onQuantityChanged: (quantity) =>
-                                            _updateQuantity(
-                                                item.product.id, quantity),
-                                        onRemove: () => _removeFromCart(
-                                            item.product.id),
-                                      );
-                                    },
-                                  ),
-                          ),
-
-                          // Cart Summary
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              border: Border(
-                                  top: BorderSide(
-                                      color: Colors.grey.withAlpha(30))),
-                            ),
-                            child: Column(
-                              children: [
-                                _buildSummaryRow('Total:', _total,
-                                    isTotal: true),
-                                const SizedBox(height: 16),
-                                BlocBuilder<SalesBloc, SalesState>(
-                                  builder: (context, state) {
-                                    return AppButton(
-                                      label: 'Checkout',
-                                      onPressed: _showPaymentDialog,
-                                      isLoading: state is SalesLoading,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            Expanded(child: Icon(Icons.inventory, size: 40, color: _T.primary.withOpacity(0.5))),
+            Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(CurrencyFormatter.format(product.price)),
+            if (cartQty > 0) CircleAvatar(radius: 10, child: Text('$cartQty', style: const TextStyle(fontSize: 10))),
           ],
         ),
       ),
     );
   }
+}
 
-  // FIX: this is a class method, not a local function — correctly placed at class level
-  Widget _buildSummaryRow(String label, double amount,
-      {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          Text(
-            CurrencyFormatter.format(amount),
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? AppColors.primary : null,
-            ),
-          ),
-        ],
-      ),
+class _CartFAB extends StatelessWidget {
+  final int itemCount;
+  final double total;
+  final Animation<double> badgeAnim;
+  final VoidCallback onTap;
+  const _CartFAB({required this.itemCount, required this.total, required this.badgeAnim, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: onTap,
+      backgroundColor: _T.primary,
+      label: Text('View Cart ($itemCount) - ${CurrencyFormatter.format(total)}'),
+      icon: const Icon(Icons.shopping_cart),
     );
   }
 }

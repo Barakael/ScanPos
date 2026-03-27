@@ -8,7 +8,9 @@ import '../../features/auth/data/models/user_model.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/pos/presentation/pages/pos_page.dart';
 import '../../features/products/presentation/pages/products_list_page.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
@@ -28,12 +30,20 @@ class AppRouter {
   AppRouter({required this.secureStorage});
 
   late final GoRouter router = GoRouter(
-    initialLocation: RouteNames.login,
+    initialLocation: RouteNames.home,
     redirect: _authGuard,
     routes: [
       GoRoute(
+        path: RouteNames.home,
+        builder: (_, __) => const HomePage(),
+      ),
+      GoRoute(
         path: RouteNames.login,
         builder: (_, __) => const LoginPage(),
+      ),
+      GoRoute(
+        path: RouteNames.register,
+        builder: (_, __) => const RegisterPage(),
       ),
       ShellRoute(
         builder: (context, state, child) => DashboardShell(child: child),
@@ -98,11 +108,23 @@ class AppRouter {
     final isLoggedIn = token != null;
     final loc = state.matchedLocation;
 
+    // Allow access to home page without authentication
+    if (loc == RouteNames.home) {
+      return null;
+    }
+
+    // Allow access to login and register pages
     if (loc == RouteNames.login) {
       if (isLoggedIn) return RouteNames.dashboard;
       return null;
     }
 
+    if (loc == RouteNames.register) {
+      if (isLoggedIn) return RouteNames.dashboard;
+      return null;
+    }
+
+    // Require authentication for all other routes
     if (!isLoggedIn) {
       return RouteNames.login;
     }
@@ -116,8 +138,11 @@ class AppRouter {
     }
     final role = user?.role?.name.toLowerCase() ?? '';
 
-    if (loc.startsWith(RouteNames.users) || loc.startsWith(RouteNames.shops)) {
+    if (loc.startsWith(RouteNames.users)) {
       if (role != 'super_admin') return RouteNames.dashboard;
+    }
+    if (loc.startsWith(RouteNames.shops)) {
+      if (role != 'super_admin' && role != 'owner') return RouteNames.dashboard;
     }
     if (loc.startsWith(RouteNames.staff) ||
         loc.startsWith(RouteNames.settings)) {
@@ -224,6 +249,11 @@ class _RoleBasedBottomNav extends StatelessWidget {
             icon: Icons.assessment_outlined,
             label: 'Reports',
             route: RouteNames.reports,
+          ),
+          NavigationItem(
+            icon: Icons.store_outlined,
+            label: 'Shops',
+            route: RouteNames.shops,
           ),
           NavigationItem(
             icon: Icons.badge_outlined,

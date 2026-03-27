@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../../shared/widgets/app_button.dart';
 
-class PaymentMethodDialog extends StatelessWidget {
+// ════════════════════════════════════════════════════════════════════════════
+// PAYMENT METHOD DIALOG
+// ════════════════════════════════════════════════════════════════════════════
+class PaymentMethodDialog extends StatefulWidget {
   final double total;
   final Function(String) onPaymentMethodSelected;
 
@@ -14,162 +16,368 @@ class PaymentMethodDialog extends StatelessWidget {
   });
 
   @override
+  State<PaymentMethodDialog> createState() => _PaymentMethodDialogState();
+}
+
+class _PaymentMethodDialogState extends State<PaymentMethodDialog>
+    with SingleTickerProviderStateMixin {
+  String? _selected;
+  late final AnimationController _animCtrl;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _scaleAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: Curves.easeOutBack,
+    );
+    _animCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  void _select(String method) {
+    HapticFeedback.selectionClick();
+    setState(() => _selected = method);
+  }
+
+  void _confirm() {
+    if (_selected == null) return;
+    HapticFeedback.mediumImpact();
+    widget.onPaymentMethodSelected(_selected!);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Icon(
-              Icons.payment,
-              size: 48,
-              color: AppColors.primary,
-            ),
-            const SizedBox(height: 16),
-            
-            Text(
-              'Select Payment Method',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: ScaleTransition(
+        scale: _scaleAnim,
+        child: Container(
+          decoration: BoxDecoration(
+            color: _C.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: _C.primary.withOpacity(0.18),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
               ),
-            ),
-            
-            const SizedBox(height: 8),
-            
-            Text(
-              'Total Amount: ${CurrencyFormatter.format(total)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Header banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_C.primary, _C.primaryLt],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.payment_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Select Payment Method',
+                          style: _ts(16,
+                              weight: FontWeight.w700, color: Colors.white),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Choose how the customer will pay',
+                          style: _ts(11, color: Colors.white60),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close_rounded,
+                          color: Colors.white, size: 16),
+                    ),
+                  ),
+                ]),
               ),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Payment Methods
-            _PaymentMethodButton(
-              icon: Icons.attach_money,
-              label: 'Cash',
-              description: 'Pay with cash',
-              color: AppColors.success,
-              onTap: () => onPaymentMethodSelected('cash'),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            _PaymentMethodButton(
-              icon: Icons.credit_card,
-              label: 'Card',
-              description: 'Pay with credit/debit card',
-              color: AppColors.primary,
-              onTap: () => onPaymentMethodSelected('card'),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            _PaymentMethodButton(
-              icon: Icons.smartphone,
-              label: 'Mobile Money',
-              description: 'Pay with mobile money',
-              color: AppColors.accent,
-              onTap: () => onPaymentMethodSelected('mobile'),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Cancel Button
-            AppButton(
-              label: 'Cancel',
-              onPressed: () => Navigator.of(context).pop(),
-              isOutlined: true,
-            ),
-          ],
+
+              // ── Total amount pill
+              Transform.translate(
+                offset: const Offset(0, -1),
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  color: _C.bg,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Amount Due',
+                          style:
+                              _ts(13, color: _C.inkMid, weight: FontWeight.w500)),
+                      Text(
+                        CurrencyFormatter.format(widget.total),
+                        style: _ts(20,
+                            weight: FontWeight.w800, color: _C.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Payment options
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Column(children: [
+                  _PayOption(
+                    icon:        Icons.payments_rounded,
+                    label:       'Cash',
+                    description: 'Physical currency payment',
+                    color:       _C.accent,
+                    value:       'cash',
+                    selected:    _selected == 'cash',
+                    onTap:       () => _select('cash'),
+                  ),
+                  const SizedBox(height: 10),
+                  _PayOption(
+                    icon:        Icons.credit_card_rounded,
+                    label:       'Card',
+                    description: 'Credit or debit card',
+                    color:       _C.info,
+                    value:       'card',
+                    selected:    _selected == 'card',
+                    onTap:       () => _select('card'),
+                  ),
+                  const SizedBox(height: 10),
+                  _PayOption(
+                    icon:        Icons.smartphone_rounded,
+                    label:       'Mobile Money',
+                    description: 'M-Pesa, Airtel Money, etc.',
+                    color:       _C.warn,
+                    value:       'mobile',
+                    selected:    _selected == 'mobile',
+                    onTap:       () => _select('mobile'),
+                  ),
+                ]),
+              ),
+
+              // ── Actions
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                child: Row(children: [
+                  // Cancel
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: _C.border),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('Cancel',
+                          style: _ts(14,
+                              weight: FontWeight.w600, color: _C.inkMid)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Confirm
+                  Expanded(
+                    flex: 2,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: ElevatedButton.icon(
+                        onPressed: _selected == null ? null : _confirm,
+                        icon: const Icon(Icons.check_circle_outline_rounded,
+                            size: 18),
+                        label: Text(
+                          _selected == null
+                              ? 'Select method'
+                              : 'Confirm Payment',
+                          style: _ts(14,
+                              weight: FontWeight.w700, color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor:
+                              _selected == null ? _C.inkLight : _C.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _PaymentMethodButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String description;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _PaymentMethodButton({
+// ════════════════════════════════════════════════════════════════════════════
+// PAYMENT OPTION TILE
+// ════════════════════════════════════════════════════════════════════════════
+class _PayOption extends StatelessWidget {
+  const _PayOption({
     required this.icon,
     required this.label,
     required this.description,
     required this.color,
+    required this.value,
+    required this.selected,
     required this.onTap,
   });
 
+  final IconData     icon;
+  final String       label, description, value;
+  final Color        color;
+  final bool         selected;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withAlpha(50)),
-          borderRadius: BorderRadius.circular(12),
-          color: color.withAlpha(10),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: AppColors.white,
-                size: 24,
-              ),
-            ),
-            
-            const SizedBox(width: 16),
-            
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+          color: selected ? color.withOpacity(0.07) : _C.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? color : _C.border,
+            width: selected ? 2 : 1,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.12),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : [
+                  BoxShadow(
+                    color: _C.primary.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
                 ],
+        ),
+        child: Row(children: [
+          // Icon container
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: selected ? color : color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon,
+                color: selected ? Colors.white : color, size: 22),
+          ),
+          const SizedBox(width: 14),
+
+          // Label + desc
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: _ts(14,
+                        weight: FontWeight.w700,
+                        color: selected ? color : _C.ink)),
+                const SizedBox(height: 2),
+                Text(description,
+                    style: _ts(11, color: _C.inkMid)),
+              ],
+            ),
+          ),
+
+          // Radio indicator
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? color : Colors.transparent,
+              border: Border.all(
+                color: selected ? color : _C.inkLight,
+                width: 2,
               ),
             ),
-            
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: color,
-            ),
-          ],
-        ),
+            child: selected
+                ? const Icon(Icons.check_rounded,
+                    color: Colors.white, size: 13)
+                : null,
+          ),
+        ]),
       ),
     );
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOCAL DESIGN TOKENS  (mirrors pos_page.dart / dashboard_page.dart)
+// ════════════════════════════════════════════════════════════════════════════
+class _C {
+  static const bg        = Color(0xFFF5F6FA);
+  static const white     = Color(0xFFFFFFFF);
+  static const primary   = Color(0xFF1E3A5F);
+  static const primaryLt = Color(0xFF2B527A);
+  static const accent    = Color(0xFF00C896);
+  static const info      = Color(0xFF3B82F6);
+  static const warn      = Color(0xFFFFA726);
+  static const ink       = Color(0xFF1A2332);
+  static const inkMid    = Color(0xFF64748B);
+  static const inkLight  = Color(0xFFCBD5E1);
+  static const border    = Color(0xFFE8EDF5);
+}
+
+TextStyle _ts(double size, {
+  FontWeight weight = FontWeight.w400,
+  Color color = _C.ink,
+}) => TextStyle(fontSize: size, fontWeight: weight, color: color);
