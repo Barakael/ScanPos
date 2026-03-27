@@ -110,9 +110,7 @@ const POS = () => {
                 className="pl-10 font-mono"
               />
             </div>
-            <Button onClick={() => handleBarcodeScan(barcodeInput)} variant="default">
-              Add
-            </Button>
+           
             <Button onClick={() => setShowScanner(true)} variant="outline" size="icon">
               <Camera className="w-4 h-4" />
             </Button>

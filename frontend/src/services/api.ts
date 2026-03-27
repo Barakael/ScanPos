@@ -208,8 +208,13 @@ export interface AssignPlanPayload {
 
 export const subscriptionsApi = {
   get: () => api.get('/subscriptions').then(r => r.data as SubscriptionRow | SubscriptionRow[] | null),
-  /** owner's single subscription */
-  getOwner: () => api.get('/subscriptions').then(r => r.data as SubscriptionRow | null),
+  /** owner's single subscription — normalises {} (Symfony null quirk) → null */
+  getOwner: () =>
+    api.get('/subscriptions').then(r => {
+      const d = r.data;
+      if (!d || typeof d !== 'object' || !('id' in d)) return null;
+      return d as SubscriptionRow;
+    }),
   /** super_admin list */
   getAll: () => api.get('/subscriptions').then(r => r.data as SubscriptionRow[]),
   assign: (data: AssignPlanPayload) => api.post('/subscriptions', data).then(r => r.data),

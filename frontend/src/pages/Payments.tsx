@@ -35,8 +35,9 @@ function formatDate(d: string | null | undefined) {
   return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function formatMoney(n: number) {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+function formatMoney(n: number | null | undefined) {
+  if (n == null || isNaN(n as number)) return '—';
+  return `$${(n as number).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 }
 
 // ─── Admin view ───────────────────────────────────────────────────────────────

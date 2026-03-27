@@ -40,7 +40,11 @@ class SubscriptionController extends Controller
             ->latest()
             ->first();
 
-        return response()->json($sub ? $this->formatSub($sub) : null);
+        // Use raw response to avoid Symfony's null→ArrayObject→{} serialization bug
+        if (!$sub) {
+            return response('null', 200)->header('Content-Type', 'application/json');
+        }
+        return response()->json($this->formatSub($sub));
     }
 
     /**
