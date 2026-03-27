@@ -25,12 +25,12 @@ interface ApiShop {
 }
 
 const emptyRegisterForm: ShopPayload = {
-  name: '', address: '', phone: '', email: '', tax_rate: 18, currency: 'TZS',
+  name: '', address: '', phone: '', email: '', currency: 'TZS',
   owner_name: '', owner_email: '', owner_password: '',
 };
 
 const emptyEditForm: ShopUpdatePayload = {
-  name: '', address: '', phone: '', email: '', tax_rate: 18, currency: 'TZS',
+  name: '', address: '', phone: '', email: '', currency: 'TZS',
 };
 
 const Shops = () => {
@@ -87,7 +87,7 @@ const Shops = () => {
     setEditingShop(shop);
     setEditForm({
       name: shop.name, address: shop.address ?? '', phone: shop.phone ?? '',
-      email: shop.email ?? '', tax_rate: shop.tax_rate, currency: shop.currency,
+      email: shop.email ?? '', currency: shop.currency,
     });
   };
 
@@ -153,9 +153,7 @@ const Shops = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-foreground">{shop.name}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-                        {shop.currency} · {shop.tax_rate}% tax
-                      </span>
+                      
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       Owner: <span className="font-medium">{shop.owner?.name ?? '—'}</span>
@@ -255,15 +253,9 @@ const Shops = () => {
                   <Label>Address</Label>
                   <Input value={registerForm.address as string} onChange={setReg('address')} placeholder="e.g. Kariakoo, Dar es Salaam" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Tax Rate (%)</Label>
-                    <Input type="number" min={0} max={100} value={registerForm.tax_rate as number} onChange={setReg('tax_rate')} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Currency</Label>
-                    <Input value={registerForm.currency as string} onChange={setReg('currency')} placeholder="TZS" maxLength={10} />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label>Currency</Label>
+                  <Input value={registerForm.currency as string} onChange={setReg('currency')} placeholder="TZS" maxLength={10} />
                 </div>
               </div>
             </div>
@@ -328,15 +320,9 @@ const Shops = () => {
               <Label>Address</Label>
               <Input value={editForm.address ?? ''} onChange={setEdit('address')} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Tax Rate (%)</Label>
-                <Input type="number" min={0} max={100} value={editForm.tax_rate ?? 18} onChange={setEdit('tax_rate')} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Currency</Label>
-                <Input value={editForm.currency ?? ''} onChange={setEdit('currency')} maxLength={10} />
-              </div>
+            <div className="space-y-1.5">
+              <Label>Currency</Label>
+              <Input value={editForm.currency ?? ''} onChange={setEdit('currency')} maxLength={10} />
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <Button variant="outline" onClick={() => setEditingShop(null)}>
