@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Branch;
 use App\Models\Shop;
 use App\Models\User;
@@ -94,6 +95,13 @@ class ShopController extends Controller
             // Link owner to this shop (no branch — owner spans all)
             $owner->update(['shop_id' => $shop->id]);
 
+            ActivityLog::record(
+                'shop_created',
+                "Shop '{$shop->name}' registered with owner {$owner->name}",
+                request()->user()?->id,
+                request()->ip()
+            );
+
             return ['shop' => $shop->load('owner:id,name,email'), 'branch' => $branch];
         });
 
@@ -147,6 +155,8 @@ class ShopController extends Controller
             User::where('shop_id', $shop->id)->update(['shop_id' => null, 'branch_id' => null]);
             $shop->delete();
         });
+
+        ActivityLog::record('shop_deleted', "Shop '{$shop->name}' deleted", request()->user()?->id, request()->ip());
 
         return response()->json(['message' => 'Shop deleted.']);
     }

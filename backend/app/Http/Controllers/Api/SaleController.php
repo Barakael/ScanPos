@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,6 +17,13 @@ class SaleController extends Controller
     {
         $query = Sale::with(['items', 'cashier:id,name'])
             ->orderByDesc('created_at');
+
+        // Scope by shop: super_admin sees all, others see only their shop's sales
+        $user = $request->user();
+        if ($user->role !== 'super_admin' && $user->shop_id) {
+            $cashierIds = User::where('shop_id', $user->shop_id)->pluck('id');
+            $query->whereIn('cashier_id', $cashierIds);
+        }
 
         if ($request->filled('date')) {
             $query->whereDate('created_at', $request->date);
@@ -61,19 +70,25 @@ class SaleController extends Controller
                 ];
             }
 
-            $taxRate = 0.18;
-            $tax     = round($subtotal * $taxRate, 2);
-            $total   = round($subtotal + $tax, 2);
+            // Tax is 18% inclusive — already contained in the price, not added on top
+            $total = round($subtotal, 2);
 
             $sale = Sale::create([
                 'cashier_id'     => $request->user()->id,
                 'subtotal'       => round($subtotal, 2),
-                'tax'            => $tax,
+                'tax'            => 0,
                 'total'          => $total,
                 'payment_method' => $request->payment_method,
             ]);
 
             $sale->items()->createMany($saleItems);
+
+            ActivityLog::record(
+                'sale_created',
+                "Sale #{$sale->id} · total {$sale->total} via {$request->payment_method} by {$request->user()->name}",
+                $request->user()->id,
+                $request->ip()
+            );
 
             return $sale;
         });
