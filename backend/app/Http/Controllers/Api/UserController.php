@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -34,6 +35,13 @@ class UserController extends Controller
             'role'     => $data['role'],
             'password' => Hash::make($data['password']),
         ]);
+
+        ActivityLog::record(
+            'user_created',
+            "User {$user->name} ({$user->role}) created",
+            $request->user()->id,
+            $request->ip()
+        );
 
         return response()->json(
             $user->only('id', 'name', 'email', 'role', 'created_at'),
@@ -69,6 +77,13 @@ class UserController extends Controller
         if ($user->id === $request->user()->id) {
             return response()->json(['message' => 'You cannot delete your own account.'], 403);
         }
+
+        ActivityLog::record(
+            'user_deleted',
+            "User {$user->name} ({$user->role}) deleted",
+            $request->user()->id,
+            $request->ip()
+        );
 
         $user->delete();
 

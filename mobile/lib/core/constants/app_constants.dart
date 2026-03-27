@@ -20,5 +20,4 @@ class AppConstants {
 
   // Tanzania
   static const String currencySymbol = 'TZS';
-  static const String vatRate = '18%';
 }

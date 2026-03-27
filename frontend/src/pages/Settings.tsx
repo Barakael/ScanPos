@@ -42,7 +42,7 @@ function ShopInfoTab() {
 
   const [hydrated, setHydrated] = useState(false);
   if (shop && !hydrated) {
-    setForm({ name: shop.name, address: shop.address ?? '', phone: shop.phone ?? '', email: shop.email ?? '', tax_rate: shop.tax_rate, currency: shop.currency });
+    setForm({ name: shop.name, address: shop.address ?? '', phone: shop.phone ?? '', email: shop.email ?? '', currency: shop.currency });
     setHydrated(true);
   }
 
@@ -83,15 +83,9 @@ function ShopInfoTab() {
         <Label className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Address</Label>
         <Input value={(form.address as string) ?? ''} onChange={set('address')} placeholder="Street, City" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Tax Rate (%)</Label>
-          <Input type="number" min={0} max={100} value={form.tax_rate ?? 18} onChange={set('tax_rate')} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Currency</Label>
-          <Input value={form.currency ?? 'TZS'} onChange={set('currency')} maxLength={10} placeholder="TZS" />
-        </div>
+      <div className="space-y-1.5">
+        <Label>Currency</Label>
+        <Input value={form.currency ?? 'TZS'} onChange={set('currency')} maxLength={10} placeholder="TZS" />
       </div>
       <Button
         onClick={() => updateMutation.mutate(form)}

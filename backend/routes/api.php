@@ -1,12 +1,17 @@
 <?php
 
+use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\AdminReportsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\StaffController;
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\SubscriptionPaymentController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,11 +43,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
     });
 
-    // User management — super_admin only (read-only list + own-role mgmt)
+    // User management — super_admin only
     Route::middleware('can:manage-users')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::put('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        // Activity logs & admin reports (super_admin only, reuse manage-users gate)
+        Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('/admin/reports', [AdminReportsController::class, 'index']);
     });
 
     // Shop management — super_admin
@@ -74,5 +82,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('can:manage-settings')->group(function () {
         Route::get('/settings', [ShopController::class, 'showOwnerShop']);
         Route::put('/settings', [ShopController::class, 'updateOwnerShop']);
+    });
+
+    // Plans — visible to all authenticated users
+    Route::get('/plans', [PlanController::class, 'index']);
+
+    // Subscriptions — owner can view their own; super_admin can view all + assign
+    Route::middleware('can:view-subscription')->group(function () {
+        Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+        Route::get('/subscription-payments', [SubscriptionPaymentController::class, 'index']);
+    });
+
+    // Subscription management — super_admin only
+    Route::middleware('can:manage-subscriptions')->group(function () {
+        Route::post('/subscriptions', [SubscriptionController::class, 'store']);
+        Route::put('/subscription-payments/{id}/mark-paid', [SubscriptionPaymentController::class, 'markPaid']);
     });
 });

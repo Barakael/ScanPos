@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 const POS = () => {
   const { user } = useAuth();
-  const { products, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartTotal, cartTax, completeSale } = useStore();
+  const { products, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartTotal, completeSale } = useStore();
   const [barcodeInput, setBarcodeInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showScanner, setShowScanner] = useState(false);
@@ -76,8 +76,6 @@ const POS = () => {
       <hr/>
       ${itemRows}
       <hr/>
-      <div class="row"><span>Subtotal</span><span>${formatCurrency(lastSale.total - lastSale.tax)}</span></div>
-      <div class="row"><span>Tax</span><span>${formatCurrency(lastSale.tax)}</span></div>
       <div class="row total"><span>TOTAL</span><span>${formatCurrency(lastSale.total)}</span></div>
       <div class="row"><span>Payment</span><span>${lastSale.paymentMethod}</span></div>
       <p style="margin-top:12px;text-align:center;font-size:10px;">Thank you!</p>
@@ -92,7 +90,7 @@ const POS = () => {
     p.barcode.includes(searchQuery)
   );
 
-  const grandTotal = cartTotal + cartTax;
+  const grandTotal = cartTotal;
 
   return (
     <AppLayout>
@@ -228,15 +226,7 @@ const POS = () => {
           {/* Totals & Payment */}
           <div className="border-t border-border p-4 space-y-3">
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-muted-foreground">
-                <span>Subtotal</span>
-                <span>{formatCurrency(cartTotal)}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Tax (18%)</span>
-                <span>{formatCurrency(cartTax)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold text-foreground pt-2 border-t border-border">
+              <div className="flex justify-between text-lg font-bold text-foreground border-t border-border pt-2">
                 <span>Total</span>
                 <span className="text-primary">{formatCurrency(grandTotal)}</span>
               </div>
@@ -325,15 +315,7 @@ const POS = () => {
               </div>
 
               <div className="space-y-1 text-sm mb-4">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(lastSale.total - lastSale.tax)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Tax</span>
-                  <span>{formatCurrency(lastSale.tax)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-foreground text-base pt-2 border-t border-border">
+                <div className="flex justify-between font-bold text-foreground text-base">
                   <span>Total</span>
                   <span>{formatCurrency(lastSale.total)}</span>
                 </div>

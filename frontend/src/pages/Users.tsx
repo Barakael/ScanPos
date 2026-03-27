@@ -260,7 +260,6 @@ const Users = () => {
                 <SelectContent>
                   <SelectItem value="cashier">Cashier</SelectItem>
                   <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>

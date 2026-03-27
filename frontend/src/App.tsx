@@ -18,6 +18,10 @@ import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import Shops from "./pages/Shops";
 import Staff from "./pages/Staff";
+import SystemLogs from "./pages/SystemLogs";
+import SystemReports from "./pages/SystemReports";
+import Payments from "./pages/Payments";
+import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -47,21 +51,33 @@ const App = () => (
                   {/* Protected — all authenticated roles */}
                   <Route element={<ProtectedRoute />}>
                     <Route path="/dashboard" element={<Dashboard />} />
+                  </Route>
+
+                  {/* Protected — owner + cashier only (operational) */}
+                  <Route element={<ProtectedRoute allowedRoles={['owner', 'cashier']} />}>
                     <Route path="/pos" element={<POS />} />
                     <Route path="/inventory" element={<Inventory />} />
                     <Route path="/reports" element={<Reports />} />
+                    <Route path="/transactions" element={<Transactions />} />
                   </Route>
 
                   {/* Protected — super_admin only */}
                   <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
                     <Route path="/users" element={<Users />} />
                     <Route path="/shops" element={<Shops />} />
+                    <Route path="/logs" element={<SystemLogs />} />
+                    <Route path="/system-reports" element={<SystemReports />} />
                   </Route>
 
                   {/* Protected — owner only */}
                   <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/staff" element={<Staff />} />
+                  </Route>
+
+                  {/* Protected — super_admin + owner (payments) */}
+                  <Route element={<ProtectedRoute allowedRoles={['super_admin', 'owner']} />}>
+                    <Route path="/payments" element={<Payments />} />
                   </Route>
 
                   <Route path="*" element={<NotFound />} />

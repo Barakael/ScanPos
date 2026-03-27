@@ -84,7 +84,6 @@ interface StoreContextType {
   updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   cartTotal: number;
-  cartTax: number;
   completeSale: (
     paymentMethod: 'cash' | 'card' | 'mobile',
     cashierId: string,
@@ -159,7 +158,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = () => setCart([]);
 
   const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const cartTax = Math.round(cartTotal * 0.18);
+  // Tax is 18% inclusive — already contained in product prices
 
   const completeSale = async (
     paymentMethod: 'cash' | 'card' | 'mobile',
@@ -235,7 +234,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         updateCartQuantity,
         clearCart,
         cartTotal,
-        cartTax,
+    
         completeSale,
         addProduct,
         updateProduct,
