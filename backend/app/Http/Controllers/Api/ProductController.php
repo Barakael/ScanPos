@@ -65,7 +65,7 @@ class ProductController extends Controller
 
         $data = $request->validate([
             'name'                => 'sometimes|string|max:255',
-            'barcode'             => 'sometimes|string|unique:products,barcode,' . $product->id,
+            'barcode'             => ['sometimes', 'string', Rule::unique('products')->where('shop_id', $product->shop_id)->ignore($product->id)],
             'price'               => 'sometimes|numeric|min:0',
             'stock'               => 'sometimes|integer|min:0',
             'category'            => 'sometimes|string|max:100',
