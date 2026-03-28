@@ -23,7 +23,7 @@ const AppSidebar = () => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',      roles: ['super_admin', 'owner', 'cashier'] },
     { icon: ShoppingCart,    label: 'Point of Sale',  path: '/pos',            roles: ['owner', 'cashier'] },
-    { icon: Package,         label: 'Inventory',      path: '/inventory',      roles: ['owner'] },
+    { icon: Package,         label: 'Inventory',      path: '/inventory',      roles: ['owner', 'cashier'] },
     { icon: Receipt,         label: 'Transactions',   path: '/transactions',   roles: ['owner', 'cashier'] },
     { icon: BarChart3,       label: 'Reports',        path: '/reports',        roles: ['owner', 'cashier'] },
     { icon: Store,           label: 'Shops',          path: '/shops',          roles: ['super_admin'] },

@@ -2,23 +2,13 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminReportsApi, AdminReportData, subscriptionsApi, subscriptionPaymentsApi, SubscriptionRow, SubscriptionPaymentRow } from '@/services/api';
-import { formatCurrency } from '@/data/mockData';
 import {
-  Store, Users, DollarSign, ShoppingCart, TrendingUp, RefreshCw, CreditCard, CheckCircle2, Clock, AlertTriangle
+  Store, Users, DollarSign, TrendingUp, RefreshCw, CreditCard, CheckCircle2, Clock, AlertTriangle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell
-} from 'recharts';
 import { Button } from '@/components/ui/button';
 
 type Tab = 'analytics' | 'subscriptions';
-
-const COLORS = [
-  'hsl(43,100%,50%)', 'hsl(222,100%,40%)', 'hsl(153,60%,40%)',
-  'hsl(210,80%,55%)', 'hsl(280,60%,55%)', 'hsl(0,72%,55%)',
-];
 
 const SUB_STATUS_BADGE: Record<string, string> = {
   active:    'bg-green-100 text-green-700',
@@ -56,23 +46,9 @@ export default function SystemReports() {
   });
 
   const summaryCards = [
-    { label: 'Total Shops',       value: data?.summary.total_shops.toString() ?? '—',          icon: Store,        color: 'text-primary',    bg: 'bg-primary/10' },
-    { label: 'Total Users',       value: data?.summary.total_users.toString() ?? '—',           icon: Users,        color: 'text-info',        bg: 'bg-info/10' },
-    { label: 'Total Revenue',     value: formatCurrency(data?.summary.total_revenue ?? 0),      icon: DollarSign,   color: 'text-warning',     bg: 'bg-warning/15' },
-    { label: 'Total Transactions',value: data?.summary.total_transactions.toString() ?? '—',    icon: ShoppingCart, color: 'text-accent-foreground', bg: 'bg-accent' },
+    { label: 'Total Shops', value: data?.summary.total_shops.toString() ?? '—', icon: Store, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'Total Users', value: data?.summary.total_users.toString() ?? '—', icon: Users, color: 'text-info',    bg: 'bg-info/10'    },
   ];
-
-  const dailyData = (data?.daily_revenue ?? []).map(d => ({
-    date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    total: d.total,
-    transactions: d.transactions,
-  }));
-
-  const shopBarData = (data?.shop_breakdown ?? []).map(s => ({
-    name: s.name.length > 12 ? s.name.slice(0, 12) + '…' : s.name,
-    revenue: s.revenue,
-    transactions: s.transactions,
-  }));
 
   const overduePayments = payments.filter(p => p.status === 'pending' && new Date(p.due_date) < new Date());
   const mrr = subscriptions.filter(s => s.status === 'active').reduce((sum, s) => sum + s.plan_price, 0);
@@ -230,68 +206,6 @@ export default function SystemReports() {
               ))}
             </div>
 
-            {/* Top shop callout */}
-            {data?.top_shop && (
-              <div className="glass-card rounded-xl p-4 border border-warning/30 bg-warning/5 flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-warning/15">
-                  <TrendingUp className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Top Performing Shop</p>
-                  <p className="text-lg font-bold text-foreground">{data.top_shop.name}</p>
-                </div>
-                <div className="ml-auto text-right">
-                  <p className="text-xl font-bold font-mono text-warning">{formatCurrency(data.top_shop.revenue)}</p>
-                  <p className="text-xs text-muted-foreground">{data.top_shop.transactions} transactions</p>
-                </div>
-              </div>
-            )}
-
-            {/* Charts row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Daily revenue — last 30 days */}
-              <div className="glass-card rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Daily Revenue — Last 30 Days</h3>
-                {isLoading ? (
-                  <div className="h-48 bg-muted/40 rounded animate-pulse" />
-                ) : dailyData.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center">No sales recorded yet.</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={dailyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 22% 83%)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                      <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                      <Bar dataKey="total" fill="hsl(43, 100%, 50%)" radius={[3, 3, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-
-              {/* Per-shop revenue bar */}
-              <div className="glass-card rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Revenue by Shop (All Time)</h3>
-                {isLoading ? (
-                  <div className="h-48 bg-muted/40 rounded animate-pulse" />
-                ) : shopBarData.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center">No shops registered.</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={shopBarData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 22% 83%)" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
-                      <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                      <Bar dataKey="revenue" radius={[0, 3, 3, 0]}>
-                        {shopBarData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
             {/* Shop breakdown table */}
             <div className="glass-card rounded-xl overflow-hidden">
               <div className="px-6 py-4 border-b border-border">
@@ -302,8 +216,6 @@ export default function SystemReports() {
                   <thead>
                     <tr className="border-b border-border bg-muted/40">
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Shop</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Revenue</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Transactions</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground">Cashiers</th>
                     </tr>
                   </thead>
@@ -311,14 +223,14 @@ export default function SystemReports() {
                     {isLoading ? (
                       Array.from({ length: 4 }).map((_, i) => (
                         <tr key={i} className="border-b border-border/40">
-                          {Array.from({ length: 4 }).map((__, j) => (
+                          {Array.from({ length: 2 }).map((__, j) => (
                             <td key={j} className="px-4 py-3"><div className="h-4 bg-muted rounded animate-pulse" /></td>
                           ))}
                         </tr>
                       ))
                     ) : (data?.shop_breakdown ?? []).length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No shops registered.</td>
+                        <td colSpan={2} className="px-4 py-8 text-center text-muted-foreground">No shops registered.</td>
                       </tr>
                     ) : (
                       (data?.shop_breakdown ?? [])
@@ -331,8 +243,6 @@ export default function SystemReports() {
                             className="border-b border-border/40 hover:bg-muted/30 transition-colors"
                           >
                             <td className="px-4 py-3 font-medium text-foreground">{shop.name}</td>
-                            <td className="px-4 py-3 text-right font-mono text-foreground">{formatCurrency(shop.revenue)}</td>
-                            <td className="px-4 py-3 text-right text-muted-foreground">{shop.transactions}</td>
                             <td className="px-4 py-3 text-right text-muted-foreground">{shop.cashier_count}</td>
                           </motion.tr>
                         ))
