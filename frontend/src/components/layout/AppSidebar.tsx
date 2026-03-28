@@ -28,7 +28,7 @@ const AppSidebar = () => {
     { icon: BarChart3,       label: 'Reports',        path: '/reports',        roles: ['owner', 'cashier'] },
     { icon: Store,           label: 'Shops',          path: '/shops',          roles: ['super_admin'] },
     { icon: Users,           label: 'Users',          path: '/users',          roles: ['super_admin'] },
-    { icon: CreditCard,      label: 'Payments',       path: '/payments',       roles: ['super_admin', 'owner'] },
+    { icon: CreditCard,      label: 'Subscriptions',  path: '/payments',       roles: ['super_admin'] },
     { icon: ScrollText,      label: 'System Logs',    path: '/logs',           roles: ['super_admin'] },
     { icon: BarChart2,       label: 'System Reports', path: '/system-reports', roles: ['super_admin'] },
     { icon: Users,           label: 'Staff',          path: '/staff',          roles: ['owner'] },
