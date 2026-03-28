@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { branchesApi, BranchPayload, OwnerSettingsPayload, settingsApi } from '@/services/api';
-import { Plus, Edit2, Trash2, Save, X, MapPin, Phone, Mail, Store, GitBranch } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { branchesApi, BranchPayload, OwnerSettingsPayload, settingsApi, subscriptionsApi, subscriptionPaymentsApi, SubscriptionRow, SubscriptionPaymentRow } from '@/services/api';
+import { Plus, Edit2, Trash2, Save, X, MapPin, Phone, Mail, Store, GitBranch, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -208,8 +209,104 @@ function BranchesTab() {
   );
 }
 
+// ─── Subscription Tab ─────────────────────────────────────────────────────────
+function SubscriptionTab() {
+  const { data: subscription } = useQuery<SubscriptionRow | null>({
+    queryKey: ['subscription-owner'],
+    queryFn: subscriptionsApi.getOwner,
+  });
+  const { data: paymentHistory = [] } = useQuery<SubscriptionPaymentRow[]>({
+    queryKey: ['subscription-payments'],
+    queryFn: subscriptionPaymentsApi.getAll,
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Plan card */}
+      {subscription ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="glass-card rounded-xl p-5 col-span-2">
+            <p className="text-xs text-muted-foreground mb-1">Current Plan</p>
+            <p className="text-2xl font-bold">{subscription.plan_name}</p>
+            <p className="text-sm text-muted-foreground">${subscription.plan_price.toFixed(2)} / month</p>
+            <span className={`inline-block mt-3 text-xs px-2 py-0.5 rounded-full font-medium ${
+              subscription.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            }`}>{subscription.status}</span>
+          </div>
+          <div className="glass-card rounded-xl p-5">
+            <p className="text-xs text-muted-foreground mb-1">Next Payment Due</p>
+            <p className="text-lg font-bold">
+              {subscription.next_due_at
+                ? new Date(subscription.next_due_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                : '—'}
+            </p>
+            {subscription.days_until_due !== null && (
+              <p className={`text-xs mt-1 ${
+                subscription.days_until_due < 0 ? 'text-red-600'
+                  : subscription.days_until_due <= 7 ? 'text-yellow-600'
+                  : 'text-muted-foreground'
+              }`}>
+                {subscription.days_until_due < 0
+                  ? `${Math.abs(subscription.days_until_due)} days overdue`
+                  : subscription.days_until_due === 0
+                  ? 'Due today'
+                  : `${subscription.days_until_due} days left`}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="glass-card rounded-xl p-8 text-center text-muted-foreground">
+          No active subscription. Contact your platform administrator.
+        </div>
+      )}
+
+      {/* Payment history */}
+      <div className="glass-card rounded-xl p-6">
+        <h3 className="text-sm font-semibold mb-4">Payment History</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Plan</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Amount</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Due Date</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Paid On</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Method</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentHistory.map(p => (
+                <tr key={p.id} className="border-b hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3">{p.plan_name}</td>
+                  <td className="px-4 py-3 font-mono">${p.amount.toFixed(2)}</td>
+                  <td className="px-4 py-3">{p.due_date ? new Date(p.due_date).toLocaleDateString() : '—'}</td>
+                  <td className="px-4 py-3">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</td>
+                  <td className="px-4 py-3 capitalize">{p.payment_method ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      p.status === 'paid'    ? 'bg-green-100 text-green-700' :
+                      p.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>{p.status}</span>
+                  </td>
+                </tr>
+              ))}
+              {paymentHistory.length === 0 && (
+                <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No payment history yet</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 const Settings = () => {
+  const { user } = useAuth();
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -219,13 +316,18 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="shop" className="space-y-6">
-          <TabsList className="grid w-full max-w-sm grid-cols-2">
+          <TabsList className={`grid w-full ${user?.role === 'owner' ? 'max-w-md grid-cols-3' : 'max-w-sm grid-cols-2'}`}>
             <TabsTrigger value="shop" className="gap-2">
               <Store className="w-4 h-4" /> Shop Info
             </TabsTrigger>
             <TabsTrigger value="branches" className="gap-2">
               <GitBranch className="w-4 h-4" /> Branches
             </TabsTrigger>
+            {user?.role === 'owner' && (
+              <TabsTrigger value="subscription" className="gap-2">
+                <CreditCard className="w-4 h-4" /> Subscription
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="shop">
@@ -235,6 +337,12 @@ const Settings = () => {
           <TabsContent value="branches">
             <BranchesTab />
           </TabsContent>
+
+          {user?.role === 'owner' && (
+            <TabsContent value="subscription">
+              <SubscriptionTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>

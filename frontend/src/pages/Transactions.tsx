@@ -119,7 +119,7 @@ export default function Transactions() {
               <thead>
                 <tr className="border-b border-border bg-muted/40">
                   <th className="w-8 px-4 py-3" />
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">#</th>
+                  
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date & Time</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Cashier</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Method</th>
@@ -162,7 +162,7 @@ export default function Transactions() {
                             : <ChevronRight className="w-4 h-4" />
                           }
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{sale.id}</td>
+                      
                         <td className="px-4 py-3 text-muted-foreground">
                           {new Date(sale.created_at).toLocaleString()}
                         </td>
