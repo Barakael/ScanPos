@@ -10,7 +10,6 @@ import { motion } from 'framer-motion';
 const ACTION_OPTIONS = [
   { value: '', label: 'All Actions' },
   { value: 'login', label: 'Login' },
-  { value: 'sale_created', label: 'Sale Created' },
   { value: 'user_created', label: 'User Created' },
   { value: 'user_deleted', label: 'User Deleted' },
   { value: 'shop_created', label: 'Shop Created' },
@@ -19,7 +18,6 @@ const ACTION_OPTIONS = [
 
 const ACTION_BADGE: Record<string, string> = {
   login:        'bg-info/10 text-info',
-  sale_created: 'bg-warning/10 text-warning',
   user_created: 'bg-primary/10 text-primary',
   user_deleted: 'bg-destructive/10 text-destructive',
   shop_created: 'bg-primary/10 text-primary',
@@ -37,7 +35,7 @@ export default function SystemLogs() {
     placeholderData: prev => prev,
   });
 
-  const logs       = data?.data ?? [];
+  const logs       = (data?.data ?? []).filter(log => log.action !== 'sale_created');
   const totalPages = data?.last_page ?? 1;
 
   return (
@@ -49,7 +47,7 @@ export default function SystemLogs() {
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <ScrollText className="w-6 h-6 text-primary" /> System Logs
             </h1>
-            <p className="text-sm text-muted-foreground">All platform activity — logins, sales, user & shop events</p>
+            <p className="text-sm text-muted-foreground">All platform activity — logins, user & shop events</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-2 self-start">
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
