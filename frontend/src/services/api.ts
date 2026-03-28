@@ -32,6 +32,18 @@ api.interceptors.response.use(
 
 export default api;
 
+// ─── Categories API ───────────────────────────────────────────────────────────
+export interface ShopCategory {
+  id: number;
+  name: string;
+}
+
+export const categoriesApi = {
+  getAll: () => api.get('/categories').then(r => r.data as ShopCategory[]),
+  create: (name: string) => api.post('/categories', { name }).then(r => r.data as ShopCategory),
+  delete: (id: number) => api.delete(`/categories/${id}`).then(r => r.data),
+};
+
 // ─── Users API (super_admin) ──────────────────────────────────────────────────
 export interface UserPayload {
   name: string;
