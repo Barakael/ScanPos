@@ -14,7 +14,7 @@ class ShopRepositoryImpl implements ShopRepository {
   Future<List<ShopEntity>> getShops() async {
     try {
       final response = await _apiClient.get<List<dynamic>>(
-        endpoint: '/shops-test', // Use temporary open route
+        endpoint: '/shops',
         parser: (json) => json as List<dynamic>,
       );
       return response.map((json) => ShopModel.fromJson(json)).toList();
@@ -35,6 +35,10 @@ class ShopRepositoryImpl implements ShopRepository {
     required String address,
     required String phone,
     required String email,
+    String currency = 'TZS',
+    required String ownerName,
+    required String ownerEmail,
+    required String ownerPassword,
   }) async {
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
@@ -45,6 +49,10 @@ class ShopRepositoryImpl implements ShopRepository {
           'address': address,
           'phone': phone,
           'email': email,
+          'currency': currency,
+          'owner_name': ownerName,
+          'owner_email': ownerEmail,
+          'owner_password': ownerPassword,
         },
       );
       return ShopModel.fromJson(response);
@@ -66,6 +74,7 @@ class ShopRepositoryImpl implements ShopRepository {
     String? address,
     String? phone,
     String? email,
+    String? currency,
     String? status,
   }) async {
     try {
@@ -77,6 +86,7 @@ class ShopRepositoryImpl implements ShopRepository {
           if (address != null) 'address': address,
           if (phone != null) 'phone': phone,
           if (email != null) 'email': email,
+          if (currency != null) 'currency': currency,
           if (status != null) 'status': status,
         },
       );

@@ -24,24 +24,20 @@ class StaffRepositoryImpl implements StaffRepository {
 
   @override
   Future<StaffEntity> createStaff({
-    required String firstName,
-    required String lastName,
+    required String name,
     required String email,
-    required String phone,
     required String password,
-    required String roleId,
+    required int branchId,
   }) async {
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
         endpoint: '/staff',
         parser: (json) => json['data'] as Map<String, dynamic>,
         data: {
-          'first_name': firstName,
-          'last_name': lastName,
+          'name': name,
           'email': email,
-          'phone': phone,
           'password': password,
-          'role_id': roleId,
+          'branch_id': branchId,
         },
       );
       return StaffModel.fromJson(response);
@@ -53,22 +49,20 @@ class StaffRepositoryImpl implements StaffRepository {
   @override
   Future<StaffEntity> updateStaff({
     required int id,
-    String? firstName,
-    String? lastName,
-    String? email,
-    String? phone,
-    String? roleId,
+    required String name,
+    required String email,
+    String? password,
+    int? branchId,
   }) async {
     try {
       final response = await _apiClient.put<Map<String, dynamic>>(
         endpoint: '/staff/$id',
         parser: (json) => json['data'] as Map<String, dynamic>,
         data: {
-          if (firstName != null) 'first_name': firstName,
-          if (lastName != null) 'last_name': lastName,
-          if (email != null) 'email': email,
-          if (phone != null) 'phone': phone,
-          if (roleId != null) 'role_id': roleId,
+          'name': name,
+          'email': email,
+          if (password != null) 'password': password,
+          if (branchId != null) 'branch_id': branchId,
         },
       );
       return StaffModel.fromJson(response);

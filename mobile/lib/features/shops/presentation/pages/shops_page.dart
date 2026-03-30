@@ -92,7 +92,7 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
   void _showToast(String message, String type) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+      SnackBar( 
         content: Row(
           children: [
             Icon(
@@ -121,9 +121,17 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ShopFormSheet(
-        onSave: (name, address, phone, email) {
+        onSave: (name, address, phone, email, currency, ownerName, ownerEmail, ownerPassword) {
           context.read<ShopBloc>().add(ShopCreateRequested(
-              name: name, address: address, phone: phone, email: email));
+            name: name, 
+            address: address, 
+            phone: phone, 
+            email: email,
+            currency: currency,
+            ownerName: ownerName,
+            ownerEmail: ownerEmail,
+            ownerPassword: ownerPassword,
+          ));
           Navigator.of(context).pop();
         },
       ),
@@ -137,9 +145,15 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
       backgroundColor: Colors.transparent,
       builder: (_) => _ShopFormSheet(
         shop: shop,
-        onSave: (name, address, phone, email) {
+        onSave: (name, address, phone, email, currency, _, __, ___) {
           context.read<ShopBloc>().add(ShopUpdateRequested(
-              id: shop.id, name: name, address: address, phone: phone, email: email));
+              id: shop.id, 
+              name: name, 
+              address: address, 
+              phone: phone, 
+              email: email,
+              currency: currency,
+          ));
           Navigator.of(context).pop();
         },
       ),
@@ -1302,12 +1316,9 @@ class _Divider extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Add / Edit Shop Bottom Sheet
-// ─────────────────────────────────────────────────────────────────────────────
 class _ShopFormSheet extends StatefulWidget {
   final ShopEntity? shop;
-  final Function(String name, String address, String phone, String email)
+  final Function(String name, String address, String phone, String email, String currency, String ownerName, String ownerEmail, String ownerPassword)
       onSave;
 
   const _ShopFormSheet({this.shop, required this.onSave});
@@ -1322,6 +1333,11 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
   final _addressCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  final _currencyCtrl = TextEditingController(text: 'TZS');
+  final _ownerNameCtrl = TextEditingController();
+  final _ownerEmailCtrl = TextEditingController();
+  final _ownerPasswordCtrl = TextEditingController();
+  bool _isPasswordVisible = false;
 
   @override
   void initState() {
@@ -1331,6 +1347,7 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
       _addressCtrl.text = widget.shop!.address;
       _phoneCtrl.text = widget.shop!.phone;
       _emailCtrl.text = widget.shop!.email;
+      _currencyCtrl.text = widget.shop!.currency;
     }
   }
 
@@ -1340,6 +1357,10 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
     _addressCtrl.dispose();
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
+    _currencyCtrl.dispose();
+    _ownerNameCtrl.dispose();
+    _ownerEmailCtrl.dispose();
+    _ownerPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -1450,6 +1471,84 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                   return null;
                 },
               ),
+              const SizedBox(height: 14),
+              _FormInput(
+                controller: _currencyCtrl,
+                label: 'Currency',
+                icon: Icons.currency_exchange_rounded,
+                validator: (v) =>
+                    (v?.isEmpty ?? true) ? 'Required' : null,
+              ),
+              // Owner Account Section
+              if (!isEdit) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _ShopsPageState._panel,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _ShopsPageState._border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'OWNER ACCOUNT',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _ShopsPageState._inkDim,
+                          letterSpacing: 0.08,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _FormInput(
+                        controller: _ownerNameCtrl,
+                        label: 'Owner Full Name',
+                        icon: Icons.person_rounded,
+                        validator: (v) =>
+                            (v?.isEmpty ?? true) ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 14),
+                      _FormInput(
+                        controller: _ownerEmailCtrl,
+                        label: 'Owner Email',
+                        icon: Icons.email_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (v) {
+                          if (v?.isEmpty ?? true) return 'Required';
+                          if (!v!.contains('@')) return 'Enter a valid email';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      _FormInput(
+                        controller: _ownerPasswordCtrl,
+                        label: 'Password',
+                        icon: Icons.lock_rounded,
+                        obscureText: !_isPasswordVisible,
+                        validator: (v) {
+                          if (v?.isEmpty ?? true) return 'Required';
+                          if (v!.length < 8) return 'Min 8 characters';
+                          return null;
+                        },
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPasswordVisible 
+                                ? Icons.visibility_off_rounded 
+                                : Icons.visibility_rounded,
+                            size: 16,
+                            color: _ShopsPageState._inkDim,
+                          ),
+                          onPressed: () {
+                            setState(() => _isPasswordVisible = !_isPasswordVisible);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -1480,6 +1579,10 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                             _addressCtrl.text,
                             _phoneCtrl.text,
                             _emailCtrl.text,
+                            _currencyCtrl.text,
+                            _ownerNameCtrl.text,
+                            _ownerEmailCtrl.text,
+                            _ownerPasswordCtrl.text,
                           );
                         }
                       },
@@ -1518,6 +1621,9 @@ class _FormInput extends StatelessWidget {
   final IconData icon;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
+  final bool? obscureText;
+  final Widget? suffixIcon;
+  final int? maxLength;
 
   const _FormInput({
     required this.controller,
@@ -1525,6 +1631,9 @@ class _FormInput extends StatelessWidget {
     required this.icon,
     this.validator,
     this.keyboardType,
+    this.obscureText,
+    this.suffixIcon,
+    this.maxLength,
   });
 
   @override
@@ -1545,12 +1654,14 @@ class _FormInput extends StatelessWidget {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          obscureText: obscureText ?? false,
           validator: validator,
           style: const TextStyle(
               fontSize: 14, color: _ShopsPageState._ink),
           decoration: InputDecoration(
             prefixIcon:
                 Icon(icon, size: 15, color: _ShopsPageState._inkDim),
+            suffixIcon: suffixIcon,
             filled: true,
             fillColor: _ShopsPageState._panel,
             contentPadding: const EdgeInsets.symmetric(

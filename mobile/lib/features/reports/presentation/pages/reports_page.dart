@@ -180,7 +180,8 @@ class _ReportsPageState extends State<ReportsPage>
                             return const _CardShimmer(height: 180);
                           }
                           if (state is AnalyticsError) {
-                            return _InlineError(message: state.message);
+                            // Show empty state instead of error for better UX
+                            return _EmptyAnalyticsCard();
                           }
                           if (state is AnalyticsLoaded) {
                             final a = state.analytics;
@@ -200,7 +201,7 @@ class _ReportsPageState extends State<ReportsPage>
                             return const _CardShimmer(height: 200);
                           }
                           if (state is AnalyticsError) {
-                            return _InlineError(message: state.message);
+                            return _EmptyChartCard();
                           }
                           if (state is AnalyticsLoaded) {
                             return _ChartCard(
@@ -238,7 +239,8 @@ class _ReportsPageState extends State<ReportsPage>
                             return const _CardShimmer(height: 200);
                           }
                           if (state is SalesError) {
-                            return _InlineError(message: state.message);
+                            return _EmptyCard(
+                                message: 'Unable to load transactions');
                           }
                           if (state is SalesLoaded) {
                             final sales = state.sales.take(5).toList();
@@ -1100,6 +1102,86 @@ class _EmptyCard extends StatelessWidget {
         child: Text(
           message,
           style: const TextStyle(fontSize: 13, color: Color(0xFF4A4A62)),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyAnalyticsCard extends StatelessWidget {
+  const _EmptyAnalyticsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 48,
+              color: const Color(0xFF4A4A62).withOpacity(0.4),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No analytics data available',
+              style: TextStyle(fontSize: 13, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Start making sales to see your analytics',
+              style: TextStyle(fontSize: 11, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyChartCard extends StatelessWidget {
+  const _EmptyChartCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.insert_chart_outlined,
+              size: 48,
+              color: const Color(0xFF4A4A62).withOpacity(0.4),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No sales data available',
+              style: TextStyle(fontSize: 13, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Sales trends will appear here once you have data',
+              style: TextStyle(fontSize: 11, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

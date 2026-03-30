@@ -6,8 +6,13 @@ class ShopEntity extends Equatable {
   final String address;
   final String phone;
   final String email;
+  final String currency;
   final String status;
   final String? manager;
+  final String? ownerName;
+  final String? ownerEmail;
+  final int? branchesCount;
+  final int? staffCount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -17,8 +22,13 @@ class ShopEntity extends Equatable {
     this.address = '',
     this.phone = '',
     this.email = '',
+    this.currency = 'TZS',
     this.status = 'active',
     this.manager,
+    this.ownerName,
+    this.ownerEmail,
+    this.branchesCount,
+    this.staffCount,
     this.createdAt,
     this.updatedAt,
   });
@@ -30,8 +40,13 @@ class ShopEntity extends Equatable {
         address,
         phone,
         email,
+        currency,
         status,
         manager,
+        ownerName,
+        ownerEmail,
+        branchesCount,
+        staffCount,
         createdAt,
         updatedAt,
       ];

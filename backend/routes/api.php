@@ -70,9 +70,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/shops/{shop}', [ShopController::class, 'destroy']);
     });
 
-    // Temporarily open shops route for testing
-    Route::get('/shops-test', [ShopController::class, 'index']);
-
     // Branch management — owner
     Route::middleware('can:manage-branch')->group(function () {
         Route::get('/branches', [BranchController::class, 'index']);

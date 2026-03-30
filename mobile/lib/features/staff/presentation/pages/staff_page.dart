@@ -96,14 +96,12 @@ class _StaffPageState extends State<StaffPage>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _StaffFormSheet(
-        onSave: (firstName, lastName, email, phone, password, roleId) {
+        onSave: (name, email, password, branchId) {
           context.read<StaffBloc>().add(StaffCreateRequested(
-                firstName: firstName,
-                lastName: lastName,
+                name: name,
                 email: email,
-                phone: phone,
                 password: password,
-                roleId: roleId,
+                branchId: branchId,
               ));
           Navigator.of(context).pop();
         },
@@ -118,14 +116,13 @@ class _StaffPageState extends State<StaffPage>
       backgroundColor: Colors.transparent,
       builder: (_) => _StaffFormSheet(
         staff: staff,
-        onSave: (firstName, lastName, email, phone, password, roleId) {
+        onSave: (name, email, password, branchId) {
           context.read<StaffBloc>().add(StaffUpdateRequested(
                 id: staff.id,
-                firstName: firstName,
-                lastName: lastName,
+                name: name,
                 email: email,
-                phone: phone,
-                roleId: roleId,
+                password: password,
+                branchId: branchId,
               ));
           Navigator.of(context).pop();
         },
@@ -297,7 +294,7 @@ class _StaffPageState extends State<StaffPage>
                                     size: 16, color: _void),
                                 SizedBox(width: 5),
                                 Text(
-                                  'Add',
+                                  'Add Cashier',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -323,8 +320,12 @@ class _StaffPageState extends State<StaffPage>
                   )
                 else if (state is StaffError)
                   SliverFillRemaining(
-                    child: _ErrorState(
-                      message: state.message,
+                    child: _EmptyStaffState(
+                      message: state.message.toLowerCase().contains('no staff') || 
+                               state.message.toLowerCase().contains('not found') ||
+                               state.message.toLowerCase().contains('empty')
+                          ? 'No staff members found'
+                          : 'Unable to load staff',
                       onRetry: () => context
                           .read<StaffBloc>()
                           .add(const StaffRequested()),
@@ -824,6 +825,54 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
+class _EmptyStaffState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _EmptyStaffState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                  color: const Color(0x1F7B68EE), shape: BoxShape.circle),
+              child: const Icon(Icons.people_outline_rounded,
+                  size: 36, color: Color(0xFF7B68EE)),
+            ),
+            const SizedBox(height: 16),
+            Text(message,
+                style: const TextStyle(
+                    fontSize: 13, color: Color(0xFF8B8BA8)),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            const Text(
+              'Add your first team member to get started',
+              style: TextStyle(
+                  fontSize: 11, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Refresh'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFF5C842),
+                foregroundColor: const Color(0xFF09090F),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyState extends StatelessWidget {
   final String message;
   final VoidCallback onAdd;
@@ -971,8 +1020,7 @@ class _IconBtn extends StatelessWidget {
 // ─── Staff Form Bottom Sheet ──────────────────────────────────────────────────
 class _StaffFormSheet extends StatefulWidget {
   final StaffEntity? staff;
-  final Function(String firstName, String lastName, String email,
-      String phone, String password, String roleId) onSave;
+  final Function(String name, String email, String password, int branchId) onSave;
 
   const _StaffFormSheet({this.staff, required this.onSave});
 
@@ -982,13 +1030,12 @@ class _StaffFormSheet extends StatefulWidget {
 
 class _StaffFormSheetState extends State<_StaffFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _firstNameCtrl = TextEditingController();
-  final _lastNameCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  String _selectedRole = 'cashier';
+  int _selectedBranchId = 0;
   bool _obscure = true;
+  List<Map<String, dynamic>> _branches = [];
 
   static const _card    = Color(0xFF1C1C28);
   static const _panel   = Color(0xFF16161F);
@@ -1005,22 +1052,26 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
   void initState() {
     super.initState();
     if (widget.staff != null) {
-      _firstNameCtrl.text = widget.staff!.firstName;
-      _lastNameCtrl.text = widget.staff!.lastName;
+      _nameCtrl.text = widget.staff!.firstName + ' ' + widget.staff!.lastName;
       _emailCtrl.text = widget.staff!.email;
-      _phoneCtrl.text = widget.staff!.phone;
-      _selectedRole = widget.staff!.roleName?.toLowerCase() ?? 'cashier';
+      _selectedBranchId = widget.staff!.branchId ?? 0;
     }
+    _loadBranches();
   }
 
   @override
   void dispose() {
-    _firstNameCtrl.dispose();
-    _lastNameCtrl.dispose();
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _phoneCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadBranches() async {
+    // TODO: Load branches from API when branches are available
+    setState(() {
+      _branches = [];
+    });
   }
 
   @override
@@ -1073,7 +1124,7 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isEdit ? 'Edit Staff Member' : 'New Staff Member',
+                        isEdit ? 'Edit Cashier' : 'Add Cashier',
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
@@ -1088,28 +1139,12 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                 ],
               ),
               const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: _Input(
-                      controller: _firstNameCtrl,
-                      label: 'First Name',
-                      icon: Icons.person_outline_rounded,
-                      validator: (v) =>
-                          (v?.isEmpty ?? true) ? 'Required' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _Input(
-                      controller: _lastNameCtrl,
-                      label: 'Last Name',
-                      icon: Icons.person_outline_rounded,
-                      validator: (v) =>
-                          (v?.isEmpty ?? true) ? 'Required' : null,
-                    ),
-                  ),
-                ],
+              _Input(
+                controller: _nameCtrl,
+                label: 'Full Name',
+                icon: Icons.person_outline_rounded,
+                validator: (v) =>
+                    (v?.isEmpty ?? true) ? 'Required' : null,
               ),
               const SizedBox(height: 14),
               _Input(
@@ -1124,21 +1159,12 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                 },
               ),
               const SizedBox(height: 14),
-              _Input(
-                controller: _phoneCtrl,
-                label: 'Phone',
-                icon: Icons.phone_rounded,
-                keyboardType: TextInputType.phone,
-                validator: (v) =>
-                    (v?.isEmpty ?? true) ? 'Required' : null,
-              ),
-              const SizedBox(height: 14),
-              // Role picker
+              // Branch picker
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'ROLE',
+                    'BRANCH',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -1147,60 +1173,36 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    children: ['cashier', 'owner'].map((role) {
-                      final isSelected = _selectedRole == role;
-                      return Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                              right: role == 'cashier' ? 8 : 0),
-                          child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedRole = role),
-                            child: AnimatedContainer(
-                              duration:
-                                  const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 10),
-                              decoration: BoxDecoration(
-                                color: isSelected ? _goldSoft : _panel,
-                                borderRadius:
-                                    BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isSelected ? _gold : _border,
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    role == 'owner'
-                                        ? Icons.manage_accounts_rounded
-                                        : Icons.point_of_sale_rounded,
-                                    color: isSelected
-                                        ? _gold
-                                        : _inkMid,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    role[0].toUpperCase() +
-                                        role.substring(1),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: isSelected
-                                          ? _gold
-                                          : _inkMid,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: _panel,
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(color: _border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _selectedBranchId,
+                        isExpanded: true,
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _inkMid),
+                        style: const TextStyle(color: _ink, fontSize: 14),
+                        items: _branches.map((branch) {
+                          return DropdownMenuItem<int>(
+                            value: branch['id'] as int,
+                            child: Text(
+                              branch['name'] as String,
+                              style: const TextStyle(color: _ink),
                             ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _selectedBranchId = value);
+                          }
+                        },
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1223,8 +1225,8 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                   ),
                   validator: (v) {
                     if (v?.isEmpty ?? true) return 'Required';
-                    if ((v?.length ?? 0) < 6) {
-                      return 'At least 6 characters';
+                    if ((v?.length ?? 0) < 8) {
+                      return 'At least 8 characters';
                     }
                     return null;
                   },
@@ -1254,12 +1256,10 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           widget.onSave(
-                            _firstNameCtrl.text,
-                            _lastNameCtrl.text,
+                            _nameCtrl.text,
                             _emailCtrl.text,
-                            _phoneCtrl.text,
                             isEdit ? '' : _passwordCtrl.text,
-                            _selectedRole,
+                            _selectedBranchId,
                           );
                         }
                       },
@@ -1269,7 +1269,7 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                               : Icons.person_add_rounded,
                           size: 15),
                       label:
-                          Text(isEdit ? 'Save Changes' : 'Add Member'),
+                          Text(isEdit ? 'Save Changes' : 'Add Cashier'),
                       style: FilledButton.styleFrom(
                         backgroundColor: _gold,
                         foregroundColor: _void,
