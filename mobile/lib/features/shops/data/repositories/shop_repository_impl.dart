@@ -14,7 +14,7 @@ class ShopRepositoryImpl implements ShopRepository {
   Future<List<ShopEntity>> getShops() async {
     try {
       final response = await _apiClient.get<List<dynamic>>(
-        endpoint: '/shops',
+        endpoint: '/shops-test', // Use temporary open route
         parser: (json) => json as List<dynamic>,
       );
       return response.map((json) => ShopModel.fromJson(json)).toList();

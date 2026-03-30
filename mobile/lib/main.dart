@@ -15,5 +15,5 @@ void main() async {
   );
   await setupDependencies(baseUrl: baseUrl);
   // 4. Start the App
-  runApp(const App());
+  runApp(const App());    
 }
