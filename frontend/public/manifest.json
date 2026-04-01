@@ -1,0 +1,31 @@
+{
+  "name": "TeraPay",
+  "short_name": "TeraPay",
+  "description": "Point of Sale & Business Management System",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#002583",
+  "background_color": "#002583",
+  "icons": [
+    {
+      "src": "/teralogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/teralogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/teralogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

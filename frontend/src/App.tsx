@@ -8,6 +8,8 @@ import { StoreProvider } from "@/contexts/StoreContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { IOSInstallPrompt } from "@/components/IOSInstallPrompt";
+import { useOfflineDetection } from "@/hooks/useOfflineDetection";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -33,6 +35,11 @@ const queryClient = new QueryClient({
   },
 });
 
+function OfflineDetector() {
+  useOfflineDetection();
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -42,6 +49,8 @@ const App = () => (
             <StoreProvider>
               <Toaster />
               <Sonner />
+              <OfflineDetector />
+              <IOSInstallPrompt />
               <BrowserRouter>
                 <Routes>
                   {/* Public */}
