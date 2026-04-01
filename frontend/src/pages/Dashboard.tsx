@@ -39,7 +39,7 @@ function AdminDashboard() {
   const stats = [
     { title: 'Total Shops',           value: data?.total_shops.toString() ?? '—',         icon: Store,          color: 'text-primary',   bg: 'bg-primary/10' },
     { title: 'Total Users',           value: data?.total_users.toString() ?? '—',          icon: Users,          color: 'text-info',      bg: 'bg-info/10' },
-    { title: 'Monthly Recurring Rev', value: `$${(data?.mrr ?? 0).toFixed(2)}`,            icon: CreditCard,     color: 'text-warning',   bg: 'bg-warning/15' },
+    { title: 'Monthly Recurring Rev', value: `${(data?.mrr ?? 0).toFixed(2)}`,            icon: CreditCard,     color: 'text-warning',   bg: 'bg-warning/15' },
     { title: 'Active Subscriptions',  value: data?.active_subscriptions.toString() ?? '—', icon: CheckCircle2,   color: 'text-green-600', bg: 'bg-green-100' },
     { title: 'Overdue Payments',      value: data?.overdue_payments.toString() ?? '0',     icon: Clock,          color: data?.overdue_payments ? 'text-red-600' : 'text-muted-foreground', bg: data?.overdue_payments ? 'bg-red-100' : 'bg-muted/40' },
   ];
@@ -83,7 +83,7 @@ function AdminDashboard() {
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.title}
