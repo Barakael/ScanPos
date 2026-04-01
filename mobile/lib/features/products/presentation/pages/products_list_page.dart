@@ -637,12 +637,8 @@ class _ProductsListPageState extends State<ProductsListPage> {
                                   ProductUpdateRequested(product.id, data),
                                 );
                           } else {
-                            // Uses ProductUpdateRequested with empty id for create,
-                            // matching the BLoC's existing event.
-                            // Replace with your actual "add" event if your BLoC
-                            // exposes a separate ProductCreateRequested(data) event.
                             context.read<ProductsBloc>().add(
-                                  ProductUpdateRequested('', data),
+                                  ProductCreateRequested(data),
                                 );
                           }
                           Navigator.pop(ctx);

@@ -12,58 +12,49 @@ class StaffRequested extends StaffEvent {
 }
 
 class StaffCreateRequested extends StaffEvent {
-  final String firstName;
-  final String lastName;
+  final String name;
   final String email;
-  final String phone;
   final String password;
-  final String roleId;
+  final int branchId;
 
   const StaffCreateRequested({
-    required this.firstName,
-    required this.lastName,
+    required this.name,
     required this.email,
-    required this.phone,
     required this.password,
-    required this.roleId,
+    required this.branchId,
   });
 
   @override
   List<Object?> get props => [
-        firstName,
-        lastName,
+        name,
         email,
-        phone,
         password,
-        roleId,
+        branchId,
       ];
 }
 
 class StaffUpdateRequested extends StaffEvent {
   final int id;
-  final String? firstName;
-  final String? lastName;
-  final String? email;
-  final String? phone;
-  final String? roleId;
+  final String name;
+  final String email;
+  final String? password;
+  final int? branchId;
 
   const StaffUpdateRequested({
     required this.id,
-    this.firstName,
-    this.lastName,
-    this.email,
-    this.phone,
-    this.roleId,
+    required this.name,
+    required this.email,
+    this.password,
+    this.branchId,
   });
 
   @override
   List<Object?> get props => [
         id,
-        firstName,
-        lastName,
+        name,
         email,
-        phone,
-        roleId,
+        password,
+        branchId,
       ];
 }
 

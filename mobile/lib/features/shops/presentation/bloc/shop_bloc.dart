@@ -24,7 +24,7 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
       final shops = await _repository.getShops();
       emit(ShopLoaded(shops));
     } catch (e) {
-      emit(ShopError(e.toString()));
+      emit(ShopError(e.toString())); 
     }
   }
 
@@ -38,6 +38,10 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         address: event.address,
         phone: event.phone,
         email: event.email,
+        currency: event.currency,
+        ownerName: event.ownerName,
+        ownerEmail: event.ownerEmail,
+        ownerPassword: event.ownerPassword,
       );
       emit(ShopCreated(newShop));
       // Refresh the list
@@ -58,6 +62,7 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         address: event.address,
         phone: event.phone,
         email: event.email,
+        currency: event.currency,
         status: event.status,
       );
       emit(ShopUpdated(updatedShop));

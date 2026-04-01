@@ -142,7 +142,7 @@ class AppRouter {
       if (role != 'super_admin') return RouteNames.dashboard;
     }
     if (loc.startsWith(RouteNames.shops)) {
-      if (role != 'super_admin' && role != 'owner') return RouteNames.dashboard;
+      if (role != 'super_admin') return RouteNames.dashboard;
     }
     if (loc.startsWith(RouteNames.staff) ||
         loc.startsWith(RouteNames.settings)) {
@@ -249,11 +249,6 @@ class _RoleBasedBottomNav extends StatelessWidget {
             icon: Icons.assessment_outlined,
             label: 'Reports',
             route: RouteNames.reports,
-          ),
-          NavigationItem(
-            icon: Icons.store_outlined,
-            label: 'Shops',
-            route: RouteNames.shops,
           ),
           NavigationItem(
             icon: Icons.badge_outlined,

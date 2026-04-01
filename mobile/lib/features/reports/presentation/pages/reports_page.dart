@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/router/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../analytics/presentation/bloc/analytics_bloc.dart';
 import '../../../analytics/domain/entities/analytics_entity.dart';
 import '../../../sales/presentation/bloc/sales_bloc.dart';
 import '../../../sales/presentation/bloc/sales_event.dart';
 import '../../../sales/presentation/bloc/sales_state.dart';
-import '../../../sales/domain/entities/sale_entity.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -25,19 +21,39 @@ class _ReportsPageState extends State<ReportsPage>
   late Animation<double> _fadeAnim;
   String _selectedPeriod = 'Today';
   String _selectedReport = 'Sales';
-  final _periodController = TextEditingController();
+
+  // ── Palette (shared design system) ──────────────────────────────────────
+  static const _void       = Color(0xFF09090F);
+  static const _surface    = Color(0xFF111118);
+  static const _panel      = Color(0xFF16161F);
+  static const _card       = Color(0xFF1C1C28);
+  static const _border     = Color(0x18FFFFFF);
+  static const _ink        = Color(0xFFF0F0FF);
+  static const _inkMid     = Color(0xFF8B8BA8);
+  static const _inkDim     = Color(0xFF4A4A62);
+  static const _gold       = Color(0xFFF5C842);
+  static const _goldSoft   = Color(0x20F5C842);
+  static const _teal       = Color(0xFF00D9A3);
+  static const _tealSoft   = Color(0x1A00D9A3);
+  static const _coral      = Color(0xFFFF5F6D);
+  static const _coralSoft  = Color(0x1AFF5F6D);
+  static const _indigo     = Color(0xFF7B68EE);
+  static const _indigoSoft = Color(0x1F7B68EE);
+  static const _amber      = Color(0xFFFF9F43);
+  static const _amberSoft  = Color(0x1FFF9F43);
 
   @override
   void initState() {
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 700),
     );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _fadeAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
     _animController.forward();
-    
-    // Fetch real data from backend
     context.read<AnalyticsBloc>().add(const AnalyticsFetchRequested());
     context.read<SalesBloc>().add(const SalesFetchRequested());
   }
@@ -45,493 +61,348 @@ class _ReportsPageState extends State<ReportsPage>
   @override
   void dispose() {
     _animController.dispose();
-    _periodController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1B2A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        titleSpacing: 16,
-        title: const Text(
-          'Reports & Analytics',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            child: FilledButton.icon(
-              onPressed: () => _showExportDialog(context),
-              icon: const Icon(Icons.download_rounded, size: 16),
-              label: const Text('Export',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: _void,
+      ),
+      child: Scaffold(
+        backgroundColor: _void,
+        body: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // ── App Bar ────────────────────────────────────────────────
+            SliverAppBar(
+              backgroundColor: _surface,
+              foregroundColor: _ink,
+              elevation: 0,
+              pinned: true,
+              expandedHeight: 110,
+              surfaceTintColor: Colors.transparent,
+              systemOverlayStyle: SystemUiOverlayStyle.light,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                title: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reports',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: _ink,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Analytics & insights',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _inkDim,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+                background: Container(
+                  decoration: const BoxDecoration(
+                    color: _surface,
+                    border: Border(bottom: BorderSide(color: _border)),
+                  ),
+                ),
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: () => _showExportSheet(context),
+                    child: Container(
+                      height: 34,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: _teal,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.download_rounded, size: 15, color: _void),
+                          SizedBox(width: 5),
+                          Text(
+                            'Export',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _void,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // ── Filter Strip ───────────────────────────────────────────
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _FilterBarDelegate(
+                selectedPeriod: _selectedPeriod,
+                selectedReport: _selectedReport,
+                onPeriodChanged: (v) => setState(() => _selectedPeriod = v),
+                onReportChanged: (v) => setState(() => _selectedReport = v),
               ),
             ),
-          ),
-        ],
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Period Selector
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedPeriod,
-                            isExpanded: true,
-                            items: ['Today', 'Yesterday', 'This Week', 'This Month', 'This Quarter', 'This Year']
-                                .map((period) => DropdownMenuItem(
-                                      value: period,
-                                      child: Text(
-                                        period,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xFF1E3A5F),
-                                        ),
-                                      ),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedPeriod = value!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedReport,
-                          items: ['Sales', 'Products', 'Staff', 'Shops', 'Customers']
-                              .map((report) => DropdownMenuItem(
-                                    value: report,
-                                    child: Text(
-                                      report,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF1E3A5F),
-                                      ),
-                                    ),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedReport = value!;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
-              // Summary Cards
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Summary',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
+            // ── Body ───────────────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Summary Stats
+                      _SectionLabel(label: 'Summary'),
+                      const SizedBox(height: 12),
+                      BlocBuilder<AnalyticsBloc, AnalyticsState>(
+                        builder: (context, state) {
+                          if (state is AnalyticsLoading) {
+                            return const _CardShimmer(height: 180);
+                          }
+                          if (state is AnalyticsError) {
+                            // Show empty state instead of error for better UX
+                            return _EmptyAnalyticsCard();
+                          }
+                          if (state is AnalyticsLoaded) {
+                            final a = state.analytics;
+                            return _StatsGrid(analytics: a);
+                          }
+                          return const SizedBox.shrink();
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    BlocBuilder<AnalyticsBloc, AnalyticsState>(
-                      builder: (context, state) {
-                        if (state is AnalyticsLoading) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        if (state is AnalyticsError) {
-                          return Center(
-                            child: Text(
-                              'Error: ${state.message}',
-                              style: const TextStyle(color: Color(0xFFEF4444)),
-                            ),
-                          );
-                        }
-                        if (state is AnalyticsLoaded) {
-                          final analytics = state.analytics;
-                          return Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _StatCard(
-                                      title: 'Total Revenue',
-                                      value: '\$${analytics.totalRevenue.toStringAsFixed(2)}',
-                                      icon: Icons.attach_money,
-                                      color: const Color(0xFF10B981),
-                                      change: '+12.5%',
-                                      isPositive: true,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _StatCard(
-                                      title: 'Total Sales',
-                                      value: analytics.totalSales.toString(),
-                                      icon: Icons.shopping_cart,
-                                      color: const Color(0xFF3B82F6),
-                                      change: '+8.2%',
-                                      isPositive: true,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _StatCard(
-                                      title: 'Avg. Order Value',
-                                      value: '\$${analytics.averageOrderValue.toStringAsFixed(2)}',
-                                      icon: Icons.receipt_long,
-                                      color: const Color(0xFF8B5CF6),
-                                      change: '-2.1%',
-                                      isPositive: false,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _StatCard(
-                                      title: 'Customers',
-                                      value: analytics.totalCustomers.toString(),
-                                      icon: Icons.people,
-                                      color: const Color(0xFFF59E0B),
-                                      change: '+15.3%',
-                                      isPositive: true,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 24),
 
-              // Chart Section
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Sales Trend',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E3A5F),
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Text(
-                              'Last 7 Days',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF2563EB),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    BlocBuilder<AnalyticsBloc, AnalyticsState>(
-                      builder: (context, state) {
-                        if (state is AnalyticsLoading) {
-                          return const Center(
-                            heightFactor: 3,
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state is AnalyticsError) {
-                          return Center(
-                            heightFactor: 3,
-                            child: Text(
-                              'Error loading chart: ${state.message}',
-                              style: const TextStyle(color: Color(0xFFEF4444)),
-                            ),
-                          );
-                        }
-                        if (state is AnalyticsLoaded) {
-                          return Container(
-                            padding: const EdgeInsets.all(20),
-                            height: 200,
-                            child: _SalesChart(dailySales: state.analytics.dailySales),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // Recent Transactions
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Recent Transactions',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E3A5F),
-                            ),
-                          ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () {
-                              // Navigate to transactions
-                            },
-                            child: const Text(
-                              'View All',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF3B82F6),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    BlocBuilder<SalesBloc, SalesState>(
-                      builder: (context, state) {
-                        if (state is SalesLoading) {
-                          return const Center(
-                            heightFactor: 2,
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state is SalesError) {
-                          return Center(
-                            heightFactor: 2,
-                            child: Text(
-                              'Error loading transactions: ${state.message}',
-                              style: const TextStyle(color: Color(0xFFEF4444)),
-                            ),
-                          );
-                        }
-                        if (state is SalesLoaded) {
-                          final sales = state.sales.take(5).toList();
-                          if (sales.isEmpty) {
-                            return const Center(
-                              heightFactor: 2,
-                              child: Text(
-                                'No transactions found',
-                                style: TextStyle(color: Color(0xFF64748B)),
-                              ),
+                      // Chart
+                      _SectionLabel(label: 'Sales Trend'),
+                      const SizedBox(height: 12),
+                      BlocBuilder<AnalyticsBloc, AnalyticsState>(
+                        builder: (context, state) {
+                          if (state is AnalyticsLoading) {
+                            return const _CardShimmer(height: 200);
+                          }
+                          if (state is AnalyticsError) {
+                            return _EmptyChartCard();
+                          }
+                          if (state is AnalyticsLoaded) {
+                            return _ChartCard(
+                              dailySales: state.analytics.dailySales,
+                              animController: _animController,
                             );
                           }
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(12),
-                            itemCount: sales.length,
-                            itemBuilder: (context, index) {
-                              final sale = sales[index];
-                              return _TransactionListItem(
-                                id: '#TRX${sale.id ?? index + 1}',
-                                customer: sale.customerName ?? 'Unknown Customer',
-                                amount: '\$${sale.total?.toStringAsFixed(2) ?? '0.00'}',
-                                status: sale.status ?? 'completed',
-                                time: _formatTime(sale.createdAt),
-                              );
-                            },
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ],
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Transactions
+                      Row(
+                        children: [
+                          const _SectionLabel(label: 'Recent Transactions'),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () {},
+                            child: const Text(
+                              'View all',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _indigo,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      BlocBuilder<SalesBloc, SalesState>(
+                        builder: (context, state) {
+                          if (state is SalesLoading) {
+                            return const _CardShimmer(height: 200);
+                          }
+                          if (state is SalesError) {
+                            return _EmptyCard(
+                                message: 'Unable to load transactions');
+                          }
+                          if (state is SalesLoaded) {
+                            final sales = state.sales.take(5).toList();
+                            if (sales.isEmpty) {
+                              return const _EmptyCard(
+                                  message: 'No transactions found');
+                            }
+                            return _TransactionCard(sales: sales);
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _showExportDialog(BuildContext context) {
-    showDialog(
+  void _showExportSheet(BuildContext context) {
+    String selected = 'PDF';
+    showModalBottomSheet(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) => Container(
+          decoration: const BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Export Report',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0D1B2A),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Select export format:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...['PDF', 'Excel', 'CSV'].map((format) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(format),
-                  leading: Radio<String>(
-                    value: format,
-                    groupValue: 'PDF',
-                    onChanged: (value) {},
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 20),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _inkDim,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  tileColor: const Color(0xFFF8FAFC),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-              )),
-              const SizedBox(height: 20),
+              ),
               Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Cancel'),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _tealSoft,
+                      borderRadius: BorderRadius.circular(11),
                     ),
+                    child: const Icon(Icons.download_rounded,
+                        color: _teal, size: 18),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
-                                SizedBox(width: 8),
-                                Text('Report exported successfully'),
-                              ],
-                            ),
-                            backgroundColor: Color(0xFF059669),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B82F6),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Export'),
-                    ),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Export Report',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: _ink,
+                          )),
+                      Text('Choose a format',
+                          style: TextStyle(fontSize: 11, color: _inkDim)),
+                    ],
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+              ...['PDF', 'Excel', 'CSV'].map((fmt) {
+                final isSelected = selected == fmt;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: GestureDetector(
+                    onTap: () => setSheet(() => selected = fmt),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isSelected ? _goldSoft : _panel,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? _gold : _border,
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            fmt == 'PDF'
+                                ? Icons.picture_as_pdf_rounded
+                                : fmt == 'Excel'
+                                    ? Icons.table_chart_rounded
+                                    : Icons.code_rounded,
+                            color: isSelected ? _gold : _inkMid,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            fmt,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected ? _gold : _inkMid,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (isSelected)
+                            const Icon(Icons.check_circle_rounded,
+                                color: _gold, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: const [
+                            Icon(Icons.check_circle_outline_rounded,
+                                color: Colors.white, size: 16),
+                            SizedBox(width: 8),
+                            Text('Report exported successfully'),
+                          ],
+                        ),
+                        backgroundColor: _teal,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 16),
+                  label: const Text('Export Now'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _gold,
+                    foregroundColor: _void,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -540,51 +411,260 @@ class _ReportsPageState extends State<ReportsPage>
     );
   }
 
-  String _formatTime(DateTime? dateTime) {
-    if (dateTime == null) return 'Unknown time';
-    
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-    
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} mins ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return DateFormat('MMM dd, yyyy').format(dateTime);
-    }
+  String _formatTime(DateTime? dt) {
+    if (dt == null) return '—';
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return DateFormat('MMM dd').format(dt);
   }
 }
 
-class _StatCard extends StatelessWidget {
+// ─── Filter Bar Delegate ──────────────────────────────────────────────────────
+class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
+  final String selectedPeriod;
+  final String selectedReport;
+  final ValueChanged<String> onPeriodChanged;
+  final ValueChanged<String> onReportChanged;
+
+  const _FilterBarDelegate({
+    required this.selectedPeriod,
+    required this.selectedReport,
+    required this.onPeriodChanged,
+    required this.onReportChanged,
+  });
+
+  static const _void    = Color(0xFF09090F);
+  static const _panel   = Color(0xFF16161F);
+  static const _border  = Color(0x18FFFFFF);
+  static const _gold    = Color(0xFFF5C842);
+  static const _ink     = Color(0xFFF0F0FF);
+  static const _inkMid  = Color(0xFF8B8BA8);
+
+  @override
+  double get minExtent => 96;
+  @override
+  double get maxExtent => 96;
+  @override
+  bool shouldRebuild(_FilterBarDelegate old) =>
+      old.selectedPeriod != selectedPeriod ||
+      old.selectedReport != selectedReport;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: _void,
+      child: Column(
+        children: [
+          // Period row
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              children:
+                  ['Today', 'Yesterday', 'This Week', 'This Month', 'This Year']
+                      .map((p) {
+                final isSelected = selectedPeriod == p;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => onPeriodChanged(p),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isSelected ? _gold : _panel,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: isSelected ? _gold : _border),
+                      ),
+                      child: Text(
+                        p,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? _void : _inkMid,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          // Report type row
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              children: ['Sales', 'Products', 'Staff', 'Shops', 'Customers']
+                  .map((r) {
+                final isSelected = selectedReport == r;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => onReportChanged(r),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0x1F7B68EE)
+                            : _panel,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF7B68EE)
+                              : _border,
+                        ),
+                      ),
+                      child: Text(
+                        r,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? const Color(0xFF7B68EE)
+                              : _inkMid,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Section Label ────────────────────────────────────────────────────────────
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFFF0F0FF),
+      ),
+    );
+  }
+}
+
+// ─── Stats Grid ───────────────────────────────────────────────────────────────
+class _StatsGrid extends StatelessWidget {
+  final AnalyticsEntity analytics;
+  const _StatsGrid({required this.analytics});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                title: 'Revenue',
+                value:
+                    '\$${analytics.totalRevenue.toStringAsFixed(0)}',
+                icon: Icons.attach_money_rounded,
+                color: const Color(0xFF00D9A3),
+                bg: const Color(0x1A00D9A3),
+                change: '+12.5%',
+                positive: true,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                title: 'Sales',
+                value: analytics.totalSales.toString(),
+                icon: Icons.shopping_bag_rounded,
+                color: const Color(0xFF7B68EE),
+                bg: const Color(0x1F7B68EE),
+                change: '+8.2%',
+                positive: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                title: 'Avg Order',
+                value:
+                    '\$${analytics.averageOrderValue.toStringAsFixed(0)}',
+                icon: Icons.receipt_long_rounded,
+                color: const Color(0xFFF5C842),
+                bg: const Color(0x20F5C842),
+                change: '-2.1%',
+                positive: false,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                title: 'Customers',
+                value: analytics.totalCustomers.toString(),
+                icon: Icons.people_alt_rounded,
+                color: const Color(0xFFFF9F43),
+                bg: const Color(0x1FFF9F43),
+                change: '+15.3%',
+                positive: true,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
   final Color color;
+  final Color bg;
   final String change;
-  final bool isPositive;
+  final bool positive;
 
-  const _StatCard({
+  const _StatTile({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    required this.bg,
     required this.change,
-    required this.isPositive,
+    required this.positive,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x18FFFFFF)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -592,58 +672,54 @@ class _StatCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: bg,
+                  borderRadius: BorderRadius.circular(9),
                 ),
-                child: Icon(icon, color: color, size: 16),
+                child: Icon(icon, color: color, size: 15),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: positive
+                      ? const Color(0x1A00D9A3)
+                      : const Color(0x1AFF5F6D),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPositive ? Icons.trending_up : Icons.trending_down,
-                      size: 10,
-                      color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      change,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  change,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: positive
+                        ? const Color(0xFF00D9A3)
+                        : const Color(0xFFFF5F6D),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0D1B2A),
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFF0F0FF),
+              height: 1.1,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
+              color: Color(0xFF4A4A62),
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
             ),
           ),
         ],
@@ -652,145 +728,267 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _SalesChart extends StatelessWidget {
+// ─── Chart Card ───────────────────────────────────────────────────────────────
+class _ChartCard extends StatelessWidget {
   final List<DailySalesEntity> dailySales;
+  final AnimationController animController;
 
-  const _SalesChart({required this.dailySales});
+  const _ChartCard({
+    required this.dailySales,
+    required this.animController,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _ChartPainter(dailySales: dailySales),
-      child: Container(),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Last 7 Days',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFF0F0FF),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0x1A00D9A3),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Revenue',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF00D9A3),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AnimatedBuilder(
+            animation: animController,
+            builder: (_, __) => SizedBox(
+              height: 160,
+              child: CustomPaint(
+                painter: _ChartPainter(
+                  dailySales: dailySales,
+                  progress: animController.value,
+                ),
+                size: Size.infinite,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ChartPainter extends CustomPainter {
   final List<DailySalesEntity> dailySales;
+  final double progress;
 
-  _ChartPainter({required this.dailySales});
+  _ChartPainter({required this.dailySales, required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
     if (dailySales.isEmpty) return;
 
-    final paint = Paint()
-      ..color = const Color(0xFF3B82F6)
+    final linePaint = Paint()
+      ..color = const Color(0xFF00D9A3)
       ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-    final fillPaint = Paint()
-      ..color = const Color(0xFF3B82F6).withOpacity(0.1)
+    final dotPaint = Paint()
+      ..color = const Color(0xFF00D9A3)
       ..style = PaintingStyle.fill;
 
-    // Find max revenue for scaling
-    final maxRevenue = dailySales.map((d) => d.revenue).reduce((a, b) => a > b ? a : b);
-    
-    // Generate points based on real data
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF00D9A3).withOpacity(0.2),
+          const Color(0xFF00D9A3).withOpacity(0.0),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..style = PaintingStyle.fill;
+
+    final maxRevenue = dailySales
+        .map((d) => d.revenue)
+        .reduce((a, b) => a > b ? a : b);
+    if (maxRevenue == 0) return;
+
+    final count = dailySales.length;
     final points = <Offset>[];
-    for (int i = 0; i < dailySales.length; i++) {
-      final dailySale = dailySales[i];
-      final x = (i / (dailySales.length - 1)) * size.width;
-      final y = size.height - (dailySale.revenue / maxRevenue) * size.height * 0.8;
+    for (int i = 0; i < count; i++) {
+      final x = count > 1 ? (i / (count - 1)) * size.width : size.width / 2;
+      final y = size.height -
+          (dailySales[i].revenue / maxRevenue) * size.height * 0.85;
       points.add(Offset(x, y));
     }
 
-    // Draw filled area
+    // Clamp visible points by progress
+    final visibleCount = (points.length * progress).ceil().clamp(1, points.length);
+    final visible = points.sublist(0, visibleCount);
+
+    // Fill
     final fillPath = Path()
       ..moveTo(0, size.height)
-      ..lineTo(points.first.dx, points.first.dy);
-    
-    for (int i = 1; i < points.length; i++) {
-      fillPath.lineTo(points[i].dx, points[i].dy);
+      ..lineTo(visible.first.dx, visible.first.dy);
+    for (int i = 1; i < visible.length; i++) {
+      fillPath.lineTo(visible[i].dx, visible[i].dy);
     }
-    fillPath.lineTo(size.width, size.height);
+    fillPath.lineTo(visible.last.dx, size.height);
     fillPath.close();
     canvas.drawPath(fillPath, fillPaint);
 
-    // Draw line
-    final path = Path()..moveTo(points.first.dx, points.first.dy);
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
+    // Line
+    final linePath = Path()..moveTo(visible.first.dx, visible.first.dy);
+    for (int i = 1; i < visible.length; i++) {
+      linePath.lineTo(visible[i].dx, visible[i].dy);
     }
-    canvas.drawPath(path, paint);
+    canvas.drawPath(linePath, linePaint);
 
-    // Draw points
-    for (final point in points) {
-      canvas.drawCircle(point, 4, paint..color = const Color(0xFF3B82F6)..style = PaintingStyle.fill);
+    // Dots
+    for (final p in visible) {
+      canvas.drawCircle(p, 4, dotPaint);
+      canvas.drawCircle(
+        p,
+        4,
+        Paint()
+          ..color = const Color(0xFF1C1C28)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
     }
+
+    // Baseline
+    canvas.drawLine(
+      Offset(0, size.height),
+      Offset(size.width, size.height),
+      Paint()
+        ..color = const Color(0x18FFFFFF)
+        ..strokeWidth = 1,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(_ChartPainter old) => old.progress != progress;
 }
 
-class _TransactionListItem extends StatelessWidget {
-  final String id;
-  final String customer;
-  final String amount;
-  final String status;
-  final String time;
-
-  const _TransactionListItem({
-    required this.id,
-    required this.customer,
-    required this.amount,
-    required this.status,
-    required this.time,
-  });
+// ─── Transaction Card ─────────────────────────────────────────────────────────
+class _TransactionCard extends StatelessWidget {
+  final List<dynamic> sales;
+  const _TransactionCard({required this.sales});
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: Column(
+        children: sales.asMap().entries.map((entry) {
+          final i = entry.key;
+          final sale = entry.value;
+          final isLast = i == sales.length - 1;
+          return Column(
+            children: [
+              _TxRow(sale: sale, index: i),
+              if (!isLast)
+                const Divider(height: 1, color: Color(0x18FFFFFF)),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _TxRow extends StatelessWidget {
+  final dynamic sale;
+  final int index;
+  const _TxRow({required this.sale, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = (sale.status ?? 'completed') as String;
     Color statusColor;
-    String statusText;
-    
-    switch (status) {
+    Color statusBg;
+    switch (status.toLowerCase()) {
       case 'completed':
-        statusColor = const Color(0xFF10B981);
-        statusText = 'Completed';
+        statusColor = const Color(0xFF00D9A3);
+        statusBg = const Color(0x1A00D9A3);
         break;
       case 'pending':
-        statusColor = const Color(0xFFF59E0B);
-        statusText = 'Pending';
-        break;
-      case 'failed':
-        statusColor = const Color(0xFFEF4444);
-        statusText = 'Failed';
+        statusColor = const Color(0xFFFF9F43);
+        statusBg = const Color(0x1FFF9F43);
         break;
       default:
-        statusColor = const Color(0xFF64748B);
-        statusText = status;
+        statusColor = const Color(0xFFFF5F6D);
+        statusBg = const Color(0x1AFF5F6D);
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0x1F7B68EE),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: Text(
+                '#${index + 1}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF7B68EE),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  id,
+                  sale.customerName ?? 'Unknown Customer',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: Color(0xFFF0F0FF),
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  customer,
+                  '#TRX${sale.id ?? index + 1}',
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1E3A5F),
+                    fontSize: 10,
+                    color: Color(0xFF4A4A62),
                   ),
                 ),
               ],
@@ -800,40 +998,191 @@ class _TransactionListItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                amount,
+                '\$${(sale.total ?? 0.0).toStringAsFixed(2)}',
                 style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF0D1B2A),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFF0F0FF),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: statusBg,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  statusText,
+                  status[0].toUpperCase() + status.substring(1),
                   style: TextStyle(
                     fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: statusColor,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 12),
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF64748B),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Utility Widgets ──────────────────────────────────────────────────────────
+class _CardShimmer extends StatelessWidget {
+  final double height;
+  const _CardShimmer({required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFF5C842),
+          strokeWidth: 2,
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineError extends StatelessWidget {
+  final String message;
+  const _InlineError({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0x1AFF5F6D),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFF5F6D).withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded,
+              color: Color(0xFFFF5F6D), size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                  fontSize: 12, color: Color(0xFFFF5F6D)),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  final String message;
+  const _EmptyCard({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: Center(
+        child: Text(
+          message,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF4A4A62)),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyAnalyticsCard extends StatelessWidget {
+  const _EmptyAnalyticsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 48,
+              color: const Color(0xFF4A4A62).withOpacity(0.4),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No analytics data available',
+              style: TextStyle(fontSize: 13, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Start making sales to see your analytics',
+              style: TextStyle(fontSize: 11, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyChartCard extends StatelessWidget {
+  const _EmptyChartCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x18FFFFFF)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.insert_chart_outlined,
+              size: 48,
+              color: const Color(0xFF4A4A62).withOpacity(0.4),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No sales data available',
+              style: TextStyle(fontSize: 13, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Sales trends will appear here once you have data',
+              style: TextStyle(fontSize: 11, color: Color(0xFF4A4A62)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

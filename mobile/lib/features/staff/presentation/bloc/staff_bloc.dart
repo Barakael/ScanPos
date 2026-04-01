@@ -33,12 +33,10 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
   ) async {
     try {
       final newStaff = await _repository.createStaff(
-        firstName: event.firstName,
-        lastName: event.lastName,
+        name: event.name,
         email: event.email,
-        phone: event.phone,
         password: event.password,
-        roleId: event.roleId,
+        branchId: event.branchId,
       );
       emit(StaffCreated(newStaff));
       // Refresh the list
@@ -55,11 +53,10 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     try {
       final updatedStaff = await _repository.updateStaff(
         id: event.id,
-        firstName: event.firstName,
-        lastName: event.lastName,
+        name: event.name,
         email: event.email,
-        phone: event.phone,
-        roleId: event.roleId,
+        password: event.password,
+        branchId: event.branchId,
       );
       emit(StaffUpdated(updatedStaff));
       // Refresh the list

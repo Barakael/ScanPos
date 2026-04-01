@@ -8,6 +8,7 @@ class StaffEntity extends Equatable {
   final String phone;
   final String? roleName;
   final String? shopName;
+  final int? branchId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -19,6 +20,7 @@ class StaffEntity extends Equatable {
     required this.phone,
     this.roleName,
     this.shopName,
+    this.branchId,
     this.createdAt,
     this.updatedAt,
   });
@@ -32,6 +34,7 @@ class StaffEntity extends Equatable {
         phone,
         roleName,
         shopName,
+        branchId,
         createdAt,
         updatedAt,
       ];

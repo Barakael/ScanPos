@@ -7,6 +7,10 @@ abstract class ShopRepository {
     required String address,
     required String phone,
     required String email,
+    String currency = 'TZS',
+    required String ownerName,
+    required String ownerEmail,
+    required String ownerPassword,
   });
   Future<ShopEntity> updateShop({
     required int id,
@@ -14,6 +18,7 @@ abstract class ShopRepository {
     String? address,
     String? phone,
     String? email,
+    String? currency,
     String? status,
   });
   Future<void> deleteShop(int id);
