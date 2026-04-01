@@ -29,6 +29,8 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["teralogo.png", "robots.txt"],
       manifest: false, // we use our own public/manifest.json
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,png,svg,ico,woff,woff2}"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],

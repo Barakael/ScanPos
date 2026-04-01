@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { IOSInstallPrompt } from "@/components/IOSInstallPrompt";
+import { AndroidInstallPrompt } from "@/components/AndroidInstallPrompt";
 import { useOfflineDetection } from "@/hooks/useOfflineDetection";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -51,6 +52,7 @@ const App = () => (
               <Sonner />
               <OfflineDetector />
               <IOSInstallPrompt />
+              <AndroidInstallPrompt />
               <BrowserRouter>
                 <Routes>
                   {/* Public */}
