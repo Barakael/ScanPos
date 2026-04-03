@@ -5,14 +5,17 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, LogOut, Settings, ChevronLeft, ChevronRight, Store,
-  Menu, X, Moon, Sun, Maximize, Minimize, ScrollText, BarChart2, CreditCard, Receipt
+  Menu, X, Moon, Sun, Maximize, Minimize, ScrollText, BarChart2, CreditCard, Receipt,
+  Download
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { usePWAInstall } from '@/contexts/PWAInstallContext';
 
 const AppSidebar = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isFullscreen, toggleFullscreen } = useTheme();
+  const { canInstall, triggerInstall } = usePWAInstall();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
@@ -21,26 +24,27 @@ const AppSidebar = () => {
   if (!user) return null;
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',      roles: ['super_admin', 'owner', 'cashier'] },
+    { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',      roles: ['super_admin', 'owner', 'cashier', 'school_manager'] },
     { icon: ShoppingCart,    label: 'Point of Sale',  path: '/pos',            roles: ['owner', 'cashier'] },
     { icon: Package,         label: 'Inventory',      path: '/inventory',      roles: ['owner', 'cashier'] },
     { icon: Receipt,         label: 'Transactions',   path: '/transactions',   roles: ['owner', 'cashier'] },
     { icon: BarChart3,       label: 'Reports',        path: '/reports',        roles: ['owner', 'cashier'] },
     { icon: Store,           label: 'Shops',          path: '/shops',          roles: ['super_admin'] },
     { icon: Users,           label: 'Users',          path: '/users',          roles: ['super_admin'] },
-    { icon: CreditCard,      label: 'Subscriptions',  path: '/payments',       roles: ['super_admin'] },
+    { icon: CreditCard,      label: 'Subscriptions',  path: '/payments',       roles: ['super_admin', 'school_manager'] },
     { icon: ScrollText,      label: 'System Logs',    path: '/logs',           roles: ['super_admin'] },
     { icon: BarChart2,       label: 'System Reports', path: '/system-reports', roles: ['super_admin'] },
-    { icon: Users,           label: 'Staff',          path: '/staff',          roles: ['owner'] },
-    { icon: Settings,        label: 'Settings',       path: '/settings',       roles: ['owner'] },
+    { icon: Users,           label: 'Staff',          path: '/staff',          roles: ['owner', 'school_manager'] },
+    { icon: Settings,        label: 'Settings',       path: '/settings',       roles: ['owner', 'school_manager'] },
   ];
 
   const filteredNav = navItems.filter(item => item.roles.includes(user.role));
 
-  const roleLabel = {
+  const roleLabel: Record<string, string> = {
     super_admin: 'Super Admin',
     owner: 'Owner',
     cashier: 'Cashier',
+    school_manager: 'School Manager',
   };
 
   const handleNavClick = () => {
@@ -137,6 +141,15 @@ const AppSidebar = () => {
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
             </button>
+            {canInstall && (
+              <button
+                onClick={triggerInstall}
+                className="mt-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FFB800] hover:bg-[#FFB800]/10 transition-colors w-full"
+              >
+                <Download className="w-4 h-4" />
+                <span>Install App</span>
+              </button>
+            )}
           </div>
         </aside>
       </>
@@ -229,6 +242,15 @@ const AppSidebar = () => {
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
+        {canInstall && !collapsed && (
+          <button
+            onClick={triggerInstall}
+            className="mt-1 mx-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FFB800] hover:bg-[#FFB800]/10 transition-colors w-full"
+          >
+            <Download className="w-4 h-4" />
+            <span>Install App</span>
+          </button>
+        )}
       </div>
     </aside>
   );
