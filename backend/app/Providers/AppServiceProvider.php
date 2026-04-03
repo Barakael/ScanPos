@@ -31,14 +31,14 @@ class AppServiceProvider extends ServiceProvider
             return $user->role === 'owner';
         });
 
-        // Owner manages their own staff (cashiers)
+        // Owner / school_manager manages their own staff (cashiers / teachers)
         Gate::define('manage-staff', function ($user) {
-            return $user->role === 'owner';
+            return in_array($user->role, ['owner', 'school_manager']);
         });
 
-        // Owner can view/edit their own shop settings
+        // Owner / school_manager can view/edit their own shop settings
         Gate::define('manage-settings', function ($user) {
-            return $user->role === 'owner';
+            return in_array($user->role, ['owner', 'school_manager']);
         });
 
         // super_admin can manage subscriptions / assign plans
@@ -46,9 +46,9 @@ class AppServiceProvider extends ServiceProvider
             return $user->role === 'super_admin';
         });
 
-        // owner can view their own subscription
+        // owner / school_manager can view their own subscription (finances)
         Gate::define('view-subscription', function ($user) {
-            return in_array($user->role, ['owner', 'super_admin']);
+            return in_array($user->role, ['owner', 'super_admin', 'school_manager']);
         });
     }
 }

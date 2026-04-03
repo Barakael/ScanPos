@@ -11,6 +11,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { IOSInstallPrompt } from "@/components/IOSInstallPrompt";
 import { AndroidInstallPrompt } from "@/components/AndroidInstallPrompt";
 import { useOfflineDetection } from "@/hooks/useOfflineDetection";
+import { PWAInstallProvider } from "@/contexts/PWAInstallContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -48,6 +49,7 @@ const App = () => (
         <ThemeProvider>
           <AuthProvider>
             <StoreProvider>
+              <PWAInstallProvider>
               <Toaster />
               <Sonner />
               <OfflineDetector />
@@ -81,19 +83,20 @@ const App = () => (
                   </Route>
 
                   {/* Protected — owner only */}
-                  <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
+                  <Route element={<ProtectedRoute allowedRoles={['owner', 'school_manager']} />}>
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/staff" element={<Staff />} />
                   </Route>
 
-                  {/* Protected — super_admin + owner (payments) */}
-                  <Route element={<ProtectedRoute allowedRoles={['super_admin', 'owner']} />}>
+                  {/* Protected — super_admin + owner + school_manager (payments/finances) */}
+                  <Route element={<ProtectedRoute allowedRoles={['super_admin', 'owner', 'school_manager']} />}>
                     <Route path="/payments" element={<Payments />} />
                   </Route>
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
+          </PWAInstallProvider>
           </StoreProvider>
         </AuthProvider>
       </ThemeProvider>
