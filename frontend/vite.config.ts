@@ -26,24 +26,17 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["teralogo.png", "robots.txt"],
-      manifest: false, // we use our own public/manifest.json
-      workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
+      // Use injectManifest so our custom sw.ts has an explicit fetch handler
+      // — the unambiguous requirement for Chrome to issue a WebAPK install.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      includeAssets: ["teralogo.png", "robots.txt", "apple-touch-icon.png"],
+      manifest: false, // we keep our own public/manifest.json
+      injectManifest: {
+        // Inject precache manifest into self.__WB_MANIFEST in sw.ts
         globPatterns: ["**/*.{js,css,html,png,svg,ico,woff,woff2}"],
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              networkTimeoutSeconds: 10,
-            },
-          },
-        ],
+        injectionPoint: "self.__WB_MANIFEST",
       },
     }),
   ].filter(Boolean),
