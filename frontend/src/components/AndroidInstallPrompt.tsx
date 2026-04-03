@@ -1,42 +1,27 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Smartphone } from "lucide-react";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import { usePWAInstall } from "@/contexts/PWAInstallContext";
 
 const SESSION_KEY = "android_install_prompt_dismissed";
 
 export function AndroidInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const { canInstall, isInstalled, triggerInstall } = usePWAInstall();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (isInstalled) return;
     const alreadyDismissed = sessionStorage.getItem(SESSION_KEY);
     if (alreadyDismissed) return;
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show our prompt after 1.5 seconds
-      setTimeout(() => setVisible(true), 1500);
-    };
-
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+    if (canInstall) {
+      const timer = setTimeout(() => setVisible(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [canInstall, isInstalled]);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setVisible(false);
-      setDeferredPrompt(null);
-    }
+    await triggerInstall();
+    setVisible(false);
   };
 
   const dismiss = () => {
