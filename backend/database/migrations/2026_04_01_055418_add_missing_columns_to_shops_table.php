@@ -12,9 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('shops', function (Blueprint $table) {
-            $table->string('address')->nullable()->after('name');
-            $table->string('phone')->nullable()->after('address');
-            $table->foreignId('owner_id')->nullable()->after('currency')->constrained('users')->nullOnDelete();
+            if (!Schema::hasColumn('shops', 'address')) {
+                $table->string('address')->nullable()->after('name');
+            }
+            if (!Schema::hasColumn('shops', 'phone')) {
+                $table->string('phone')->nullable()->after('address');
+            }
+            if (!Schema::hasColumn('shops', 'owner_id')) {
+                $table->foreignId('owner_id')->nullable()->after('currency')->constrained('users')->nullOnDelete();
+            }
         });
     }
 

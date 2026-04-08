@@ -8,6 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip if cashier_id is already nullable to avoid re-running on existing DBs
+        $columns = Schema::getColumns('sales');
+        foreach ($columns as $col) {
+            $colName = is_array($col) ? ($col['name'] ?? '') : (property_exists($col, 'name') ? $col->name : '');
+            $nullable = is_array($col) ? ($col['nullable'] ?? false) : (property_exists($col, 'nullable') ? $col->nullable : false);
+            if ($colName === 'cashier_id' && $nullable) {
+                return;
+            }
+        }
         Schema::table('sales', function (Blueprint $table) {
             $table->dropForeign(['cashier_id']);
             $table->foreignId('cashier_id')->nullable()->change();
