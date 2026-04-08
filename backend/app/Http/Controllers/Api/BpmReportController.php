@@ -7,50 +7,131 @@ use App\Models\Shop;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class BpmReportController extends Controller
 {
     /**
      * GET /api/bpm/overview
      *
-     * General snapshot used by the BPM system to monitor the platform at a glance:
-     * - Shops: total registered, added this week, added this month
-     * - Subscriptions: active total, payments paid this week / this month,
-     *   corresponding revenue, and overdue pending invoices
+     * Single comprehensive endpoint for the BPM system.
+     * Returns shops, subscriptions, revenue totals, weekly breakdown
+     * (current month), and monthly breakdown (current year).
      */
     public function overview(): JsonResponse
     {
         $now        = now();
-        $weekStart  = $now->copy()->startOfIsoWeek();
+        $weekStart  = $now->copy()->startOfWeek(Carbon::MONDAY);
         $monthStart = $now->copy()->startOfMonth();
+        $lastMonthStart = $now->copy()->subMonth()->startOfMonth();
+        $lastMonthEnd   = $now->copy()->subMonth()->endOfMonth();
+        $yearStart  = $now->copy()->startOfYear();
+
+        // ── Shops ─────────────────────────────────────────────────────────────
+        $recentShops = Shop::select('id', 'name', 'email', 'currency', 'created_at')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn ($s) => [
+                'shop_id'    => $s->id,
+                'name'       => $s->name,
+                'email'      => $s->email,
+                'currency'   => $s->currency,
+                'created_at' => $s->created_at,
+            ]);
+
+        // ── Subscription payments ─────────────────────────────────────────────
+        $recentPayments = SubscriptionPayment::with('shop:id,name,currency')
+            ->where('status', 'paid')
+            ->orderByDesc('paid_at')
+            ->limit(5)
+            ->get()
+            ->map(fn ($p) => [
+                'payment_id'     => $p->id,
+                'shop'           => $p->shop?->name,
+                'amount'         => (float) $p->amount,
+                'payment_method' => $p->payment_method,
+                'paid_at'        => $p->paid_at,
+            ]);
+
+        // ── Monthly revenue — all months of current year ──────────────────────
+        $yearPayments = SubscriptionPayment::where('status', 'paid')
+            ->where('paid_at', '>=', $yearStart)
+            ->get(['amount', 'paid_at'])
+            ->groupBy(fn ($p) => Carbon::parse($p->paid_at)->format('Y-m'));
+
+        $yearShops = Shop::where('created_at', '>=', $yearStart)
+            ->get(['created_at'])
+            ->groupBy(fn ($s) => Carbon::parse($s->created_at)->format('Y-m'));
+
+        $monthlyRevenue = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $key   = $now->copy()->month($m)->format('Y-m');
+            $label = Carbon::createFromFormat('Y-m', $key)->format('M Y');
+            $group = $yearPayments->get($key, collect());
+            $monthlyRevenue[] = [
+                'month'              => $label,
+                'period'             => $key,
+                'revenue'            => (float) $group->sum('amount'),
+                'paid_subscriptions' => $group->count(),
+                'new_shops'          => $yearShops->get($key, collect())->count(),
+            ];
+        }
+
+        // ── Weekly revenue — weeks of current month ───────────────────────────
+        $weeklyRevenue = [];
+        $weekCursor    = $monthStart->copy()->startOfWeek(Carbon::MONDAY);
+        $weekNum       = 1;
+
+        while ($weekCursor->lte($now->copy()->endOfMonth())) {
+            $weekEnd = $weekCursor->copy()->endOfWeek(Carbon::SUNDAY);
+
+            $revenue = SubscriptionPayment::where('status', 'paid')
+                ->whereBetween('paid_at', [$weekCursor, $weekEnd])
+                ->sum('amount');
+
+            $newShops = Shop::whereBetween('created_at', [$weekCursor, $weekEnd])->count();
+
+            $weeklyRevenue[] = [
+                'week'       => 'Week ' . $weekNum,
+                'period'     => $weekCursor->toDateString() . ' to ' . $weekEnd->toDateString(),
+                'revenue'    => (float) $revenue,
+                'new_shops'  => $newShops,
+            ];
+
+            $weekCursor->addWeek();
+            $weekNum++;
+        }
 
         return response()->json([
-            'shops' => [
-                'total'            => Shop::count(),
-                'added_this_week'  => Shop::where('created_at', '>=', $weekStart)->count(),
-                'added_this_month' => Shop::where('created_at', '>=', $monthStart)->count(),
+            'status'  => 'success',
+            'data'    => [
+                'shops' => [
+                    'total'           => Shop::count(),
+                    'this_week'       => Shop::where('created_at', '>=', $weekStart)->count(),
+                    'this_month'      => Shop::where('created_at', '>=', $monthStart)->count(),
+                    'last_month'      => Shop::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count(),
+                    'recent'          => $recentShops,
+                ],
+                'subscriptions' => [
+                    'active_total'    => Subscription::where('status', 'active')->count(),
+                    'this_week'       => SubscriptionPayment::where('status', 'paid')->where('paid_at', '>=', $weekStart)->count(),
+                    'this_month'      => SubscriptionPayment::where('status', 'paid')->where('paid_at', '>=', $monthStart)->count(),
+                    'last_month'      => SubscriptionPayment::where('status', 'paid')->whereBetween('paid_at', [$lastMonthStart, $lastMonthEnd])->count(),
+                    'pending_overdue' => SubscriptionPayment::where('status', 'pending')->where('due_date', '<', today())->count(),
+                    'recent_payments' => $recentPayments,
+                ],
+                'revenue' => [
+                    'currency'    => 'TZS',
+                    'total'       => (float) SubscriptionPayment::where('status', 'paid')->sum('amount'),
+                    'this_week'   => (float) SubscriptionPayment::where('status', 'paid')->where('paid_at', '>=', $weekStart)->sum('amount'),
+                    'this_month'  => (float) SubscriptionPayment::where('status', 'paid')->where('paid_at', '>=', $monthStart)->sum('amount'),
+                    'last_month'  => (float) SubscriptionPayment::where('status', 'paid')->whereBetween('paid_at', [$lastMonthStart, $lastMonthEnd])->sum('amount'),
+                ],
+                'weekly_revenue'  => $weeklyRevenue,
+                'monthly_revenue' => $monthlyRevenue,
             ],
-            'subscriptions' => [
-                'active_total'          => Subscription::where('status', 'active')->count(),
-                'paid_this_week'        => SubscriptionPayment::where('status', 'paid')
-                                            ->where('paid_at', '>=', $weekStart)
-                                            ->count(),
-                'paid_this_month'       => SubscriptionPayment::where('status', 'paid')
-                                            ->where('paid_at', '>=', $monthStart)
-                                            ->count(),
-                'revenue_this_week'     => (float) SubscriptionPayment::where('status', 'paid')
-                                            ->where('paid_at', '>=', $weekStart)
-                                            ->sum('amount'),
-                'revenue_this_month'    => (float) SubscriptionPayment::where('status', 'paid')
-                                            ->where('paid_at', '>=', $monthStart)
-                                            ->sum('amount'),
-                'pending_overdue'       => SubscriptionPayment::where('status', 'pending')
-                                            ->where('due_date', '<', today())
-                                            ->count(),
-            ],
-            'generated_at' => $now->toIso8601String(),
+            'message' => 'BPM overview retrieved successfully.',
         ]);
     }
 

@@ -109,9 +109,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-// BPM system reports — authenticated via BPM_API_KEY (Authorization: Bearer <key>)
+// BPM system reports — authenticated via BPM_API_KEY (X-BPM-API-Key: <key>)
 Route::middleware('bpm.apikey')->group(function () {
-    Route::get('/bpm/overview',       [BpmReportController::class, 'overview']);
-    Route::get('/bpm/report/weekly',  [BpmReportController::class, 'weekly']);
-    Route::get('/bpm/report/monthly', [BpmReportController::class, 'monthly']);
+    Route::get('/bpm/overview', [BpmReportController::class, 'overview']);
 });
