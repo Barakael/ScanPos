@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AdminReportsController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BpmReportController;
 use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
@@ -106,4 +107,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/subscriptions', [SubscriptionController::class, 'store']);
         Route::put('/subscription-payments/{id}/mark-paid', [SubscriptionPaymentController::class, 'markPaid']);
     });
+});
+
+// BPM system reports — authenticated via BPM_API_KEY (Authorization: Bearer <key>)
+Route::middleware('bpm.apikey')->group(function () {
+    Route::get('/bpm/overview',       [BpmReportController::class, 'overview']);
+    Route::get('/bpm/report/weekly',  [BpmReportController::class, 'weekly']);
+    Route::get('/bpm/report/monthly', [BpmReportController::class, 'monthly']);
 });
