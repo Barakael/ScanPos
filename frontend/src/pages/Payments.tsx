@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,9 +9,10 @@ import {
   SubscriptionRow,
   SubscriptionPaymentRow,
   Plan,
+  PlanPayload,
   AssignPlanPayload,
 } from '@/services/api';
-import { CreditCard, CheckCircle2, Clock, AlertTriangle, RefreshCw, Calendar, DollarSign } from 'lucide-react';
+import { CreditCard, CheckCircle2, Clock, AlertTriangle, RefreshCw, Calendar, DollarSign, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
@@ -41,6 +42,8 @@ function formatMoney(n: number | null | undefined) {
 }
 
 // ─── Admin view ───────────────────────────────────────────────────────────────
+const BLANK_PLAN_FORM = { name: '', price: '', max_branches: '1', max_staff: '5' };
+
 function AdminPayments() {
   const qc = useQueryClient();
   const [assignShopId, setAssignShopId]   = useState('');
@@ -48,6 +51,10 @@ function AdminPayments() {
   const [markingId, setMarkingId]         = useState<number | null>(null);
   const [payMethod, setPayMethod]         = useState('');
   const [payRef, setPayRef]               = useState('');
+  // Plan management state
+  const [showPlanForm, setShowPlanForm]   = useState(false);
+  const [editingPlan, setEditingPlan]     = useState<Plan | null>(null);
+  const [planForm, setPlanForm]           = useState(BLANK_PLAN_FORM);
 
   const { data: subscriptions = [], isLoading: subsLoading, refetch: refetchSubs } =
     useQuery<SubscriptionRow[]>({
@@ -61,10 +68,67 @@ function AdminPayments() {
       queryFn: subscriptionPaymentsApi.getAll,
     });
 
-  const { data: plans = [] } = useQuery<Plan[]>({
+  const { data: plans = [], refetch: refetchPlans } = useQuery<Plan[]>({
     queryKey: ['plans'],
     queryFn: plansApi.getAll,
   });
+
+  const createPlanMutation = useMutation({
+    mutationFn: (data: PlanPayload) => plansApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plans'] });
+      setShowPlanForm(false);
+      setEditingPlan(null);
+      setPlanForm(BLANK_PLAN_FORM);
+    },
+  });
+
+  const updatePlanMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<PlanPayload> }) => plansApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plans'] });
+      setShowPlanForm(false);
+      setEditingPlan(null);
+      setPlanForm(BLANK_PLAN_FORM);
+    },
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: (id: number) => plansApi.destroy(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
+
+  const handlePlanSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data: PlanPayload = {
+      name:         planForm.name,
+      price:        parseFloat(planForm.price),
+      max_branches: parseInt(planForm.max_branches),
+      max_staff:    parseInt(planForm.max_staff),
+    };
+    if (editingPlan) {
+      updatePlanMutation.mutate({ id: editingPlan.id, data });
+    } else {
+      createPlanMutation.mutate(data);
+    }
+  };
+
+  const startEditPlan = (plan: Plan) => {
+    setEditingPlan(plan);
+    setPlanForm({
+      name:         plan.name,
+      price:        String(plan.price),
+      max_branches: String(plan.max_branches),
+      max_staff:    String(plan.max_staff),
+    });
+    setShowPlanForm(true);
+  };
+
+  const cancelPlanForm = () => {
+    setShowPlanForm(false);
+    setEditingPlan(null);
+    setPlanForm(BLANK_PLAN_FORM);
+  };
 
   const assignMutation = useMutation({
     mutationFn: (data: AssignPlanPayload) => subscriptionsApi.assign(data),
@@ -94,6 +158,158 @@ function AdminPayments() {
 
   return (
     <div className="space-y-8">
+      {/* ── Plan Management ──────────────────────────────────────── */}
+      <div className="bg-card border rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="font-semibold">Subscription Plans</h2>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => refetchPlans()}><RefreshCw size={15} /></Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (showPlanForm && !editingPlan) { cancelPlanForm(); return; }
+                setEditingPlan(null);
+                setPlanForm(BLANK_PLAN_FORM);
+                setShowPlanForm(true);
+              }}
+            >
+              <Plus size={14} className="mr-1" /> New Plan
+            </Button>
+          </div>
+        </div>
+
+        {/* Create / edit form */}
+        {showPlanForm && (
+          <div className="p-4 border-b bg-muted/30">
+            <p className="text-xs font-medium text-muted-foreground mb-3">
+              {editingPlan ? `Editing: ${editingPlan.name}` : 'Create new plan'}
+            </p>
+            <form className="flex gap-3 flex-wrap items-end" onSubmit={handlePlanSubmit}>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">Name</label>
+                <input
+                  className="border rounded-lg px-3 py-2 text-sm bg-background w-36"
+                  placeholder="e.g. Starter"
+                  value={planForm.name}
+                  onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">Price / mo ($)</label>
+                <input
+                  type="number" step="0.01" min="0"
+                  className="border rounded-lg px-3 py-2 text-sm bg-background w-28"
+                  placeholder="29.00"
+                  value={planForm.price}
+                  onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">Max Branches</label>
+                <input
+                  type="number" min="1"
+                  className="border rounded-lg px-3 py-2 text-sm bg-background w-28"
+                  value={planForm.max_branches}
+                  onChange={e => setPlanForm(f => ({ ...f, max_branches: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">Max Staff</label>
+                <input
+                  type="number" min="1"
+                  className="border rounded-lg px-3 py-2 text-sm bg-background w-24"
+                  value={planForm.max_staff}
+                  onChange={e => setPlanForm(f => ({ ...f, max_staff: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={createPlanMutation.isPending || updatePlanMutation.isPending}
+                >
+                  {editingPlan
+                    ? (updatePlanMutation.isPending ? 'Saving…' : 'Save Changes')
+                    : (createPlanMutation.isPending ? 'Creating…' : 'Create Plan')}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={cancelPlanForm}>Cancel</Button>
+              </div>
+            </form>
+            {(createPlanMutation.isError || updatePlanMutation.isError) && (
+              <p className="text-xs text-destructive mt-2">
+                {((createPlanMutation.error || updatePlanMutation.error) as Error)?.message}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Plans table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                {['Name', 'Price / mo', 'Max Branches', 'Max Staff', 'Status', ''].map(h => (
+                  <th key={h} className="text-left px-4 py-2 font-medium text-muted-foreground">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {plans.map(plan => (
+                <tr key={plan.id} className="border-t hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 font-medium">{plan.name}</td>
+                  <td className="px-4 py-3 font-mono">{formatMoney(plan.price)}</td>
+                  <td className="px-4 py-3">{plan.max_branches >= 999 ? 'Unlimited' : plan.max_branches}</td>
+                  <td className="px-4 py-3">{plan.max_staff >= 999 ? 'Unlimited' : plan.max_staff}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      plan.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {plan.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1 justify-end">
+                      <Button
+                        size="sm" variant="ghost" className="h-7 px-2"
+                        title="Edit"
+                        onClick={() => startEditPlan(plan)}
+                      >
+                        <Pencil size={13} />
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost" className="h-7 px-2 text-muted-foreground"
+                        title={plan.is_active ? 'Deactivate' : 'Activate'}
+                        disabled={updatePlanMutation.isPending}
+                        onClick={() => updatePlanMutation.mutate({ id: plan.id, data: { is_active: !plan.is_active } })}
+                      >
+                        {plan.is_active ? <X size={13} /> : <Check size={13} />}
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost" className="h-7 px-2 text-destructive"
+                        title="Delete"
+                        disabled={deletePlanMutation.isPending}
+                        onClick={() => deletePlanMutation.mutate(plan.id)}
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {plans.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No plans yet — create one above.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[

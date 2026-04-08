@@ -195,8 +195,19 @@ export interface Plan {
   is_active: boolean;
 }
 
+export interface PlanPayload {
+  name: string;
+  price: number;
+  max_branches: number;
+  max_staff: number;
+  is_active?: boolean;
+}
+
 export const plansApi = {
   getAll: () => api.get('/plans').then(r => r.data as Plan[]),
+  create: (data: PlanPayload) => api.post('/plans', data).then(r => r.data as Plan),
+  update: (id: number, data: Partial<PlanPayload>) => api.put(`/plans/${id}`, data).then(r => r.data as Plan),
+  destroy: (id: number) => api.delete(`/plans/${id}`),
 };
 
 // ─── Subscriptions API ────────────────────────────────────────────────────────
