@@ -93,7 +93,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/settings', [ShopController::class, 'updateOwnerShop']);
     });
 
-    // Plans — visible to all authenticated users
+    // Plans — readable by all authenticated users; writable by super_admin
     Route::get('/plans', [PlanController::class, 'index']);
 
     // Subscriptions — owner can view their own; super_admin can view all + assign
@@ -102,8 +102,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscription-payments', [SubscriptionPaymentController::class, 'index']);
     });
 
-    // Subscription management — super_admin only
+    // Subscription & plan management — super_admin only
     Route::middleware('can:manage-subscriptions')->group(function () {
+        Route::post('/plans', [PlanController::class, 'store']);
+        Route::put('/plans/{plan}', [PlanController::class, 'update']);
+        Route::delete('/plans/{plan}', [PlanController::class, 'destroy']);
         Route::post('/subscriptions', [SubscriptionController::class, 'store']);
         Route::put('/subscription-payments/{id}/mark-paid', [SubscriptionPaymentController::class, 'markPaid']);
     });
