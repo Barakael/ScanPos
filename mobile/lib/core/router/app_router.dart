@@ -18,8 +18,10 @@ import '../../features/sales/presentation/pages/create_sale_page.dart';
 import '../../features/sales/presentation/pages/sale_detail_page.dart';
 import '../../features/sales/presentation/pages/sales_list_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/settings/presentation/pages/owner_settings_page.dart' as owner_settings;
 import '../../features/shops/presentation/pages/shops_page.dart';
 import '../../features/staff/presentation/pages/staff_page.dart';
+import '../../features/transactions/presentation/pages/transactions_page.dart';
 import '../../features/users/presentation/pages/users_page.dart';
 import '../storage/secure_storage.dart';
 import 'route_names.dart';
@@ -77,8 +79,24 @@ class AppRouter {
             builder: (_, __) => const StaffPage(),
           ),
           GoRoute(
+            path: RouteNames.transactions,
+            builder: (_, __) => const TransactionsPage(),
+          ),
+          GoRoute(
             path: RouteNames.settings,
-            builder: (_, __) => const SettingsPage(),
+            builder: (context, state) {
+              return BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, authState) {
+                  if (authState is AuthAuthenticated) {
+                    final role = authState.user.roleName.toLowerCase();
+                    if (role == 'owner' || role == 'store owner' || role == 'shop owner') {
+                      return const owner_settings.OwnerSettingsPage();
+                    }
+                  }
+                  return const SettingsPage();
+                },
+              );
+            },
           ),
           // Order matters: `/sales/create` before `/sales/:id`.
           GoRoute(
@@ -108,12 +126,8 @@ class AppRouter {
     final isLoggedIn = token != null;
     final loc = state.matchedLocation;
 
-    // Allow access to home page without authentication
-    if (loc == RouteNames.home) {
-      return null;
-    }
+    if (loc == RouteNames.home) return null;
 
-    // Allow access to login and register pages
     if (loc == RouteNames.login) {
       if (isLoggedIn) return RouteNames.dashboard;
       return null;
@@ -124,10 +138,7 @@ class AppRouter {
       return null;
     }
 
-    // Require authentication for all other routes
-    if (!isLoggedIn) {
-      return RouteNames.login;
-    }
+    if (!isLoggedIn) return RouteNames.login;
 
     UserModel? user;
     final raw = await secureStorage.getUser();
@@ -146,7 +157,7 @@ class AppRouter {
     }
     if (loc.startsWith(RouteNames.staff) ||
         loc.startsWith(RouteNames.settings)) {
-      if (role != 'owner') return RouteNames.dashboard;
+      if (role != 'owner' && role != 'store owner' && role != 'shop owner') return RouteNames.dashboard;
     }
     if (loc.startsWith(RouteNames.inventory)) {
       if (role == 'cashier') return RouteNames.dashboard;
@@ -156,10 +167,12 @@ class AppRouter {
   }
 }
 
-/// Bottom navigation — items match `frontend/src/components/layout/AppSidebar.tsx`.
+// ---------------------------------------------------------------------------
+// Shell
+// ---------------------------------------------------------------------------
+
 class DashboardShell extends StatelessWidget {
   final Widget child;
-
   const DashboardShell({super.key, required this.child});
 
   @override
@@ -180,22 +193,25 @@ class DashboardShell extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Bottom nav
+// ---------------------------------------------------------------------------
+
 class _RoleBasedBottomNav extends StatelessWidget {
   final String userRole;
-
   const _RoleBasedBottomNav({required this.userRole});
 
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    int currentIndex = 0;
-
     final role = userRole.toLowerCase();
-    List<NavigationItem> navigationItems;
+
+    final List<NavigationItem> primaryItems;
+    final List<NavigationItem> overflowItems;
 
     switch (role) {
       case 'super_admin':
-        navigationItems = [
+        primaryItems = [
           NavigationItem(
             icon: Icons.dashboard_outlined,
             label: 'Dashboard',
@@ -216,6 +232,8 @@ class _RoleBasedBottomNav extends StatelessWidget {
             label: 'Reports',
             route: RouteNames.reports,
           ),
+        ];
+        overflowItems = [
           NavigationItem(
             icon: Icons.store_outlined,
             label: 'Shops',
@@ -228,8 +246,11 @@ class _RoleBasedBottomNav extends StatelessWidget {
           ),
         ];
         break;
+
       case 'owner':
-        navigationItems = [
+      case 'store owner':
+      case 'shop owner':
+        primaryItems = [
           NavigationItem(
             icon: Icons.dashboard_outlined,
             label: 'Dashboard',
@@ -250,10 +271,17 @@ class _RoleBasedBottomNav extends StatelessWidget {
             label: 'Reports',
             route: RouteNames.reports,
           ),
+        ];
+        overflowItems = [
           NavigationItem(
             icon: Icons.badge_outlined,
             label: 'Staff',
             route: RouteNames.staff,
+          ),
+          NavigationItem(
+            icon: Icons.receipt_long_outlined,
+            label: 'Transactions',
+            route: RouteNames.transactions,
           ),
           NavigationItem(
             icon: Icons.settings_outlined,
@@ -262,8 +290,9 @@ class _RoleBasedBottomNav extends StatelessWidget {
           ),
         ];
         break;
+
       case 'cashier':
-        navigationItems = [
+        primaryItems = [
           NavigationItem(
             icon: Icons.dashboard_outlined,
             label: 'Dashboard',
@@ -280,19 +309,29 @@ class _RoleBasedBottomNav extends StatelessWidget {
             route: RouteNames.reports,
           ),
         ];
+        overflowItems = [];
         break;
+
       default:
-        navigationItems = [
+        primaryItems = [
           NavigationItem(
             icon: Icons.dashboard_outlined,
             label: 'Dashboard',
             route: RouteNames.dashboard,
           ),
         ];
+        overflowItems = [];
     }
 
-    for (var i = 0; i < navigationItems.length; i++) {
-      if (location.startsWith(navigationItems[i].route)) {
+    final showMore = overflowItems.isNotEmpty;
+
+    // Is the active route inside the overflow group?
+    final overflowActive =
+        overflowItems.any((item) => location.startsWith(item.route));
+
+    int currentIndex = overflowActive ? primaryItems.length : 0;
+    for (var i = 0; i < primaryItems.length; i++) {
+      if (location.startsWith(primaryItems[i].route)) {
         currentIndex = i;
         break;
       }
@@ -301,21 +340,82 @@ class _RoleBasedBottomNav extends StatelessWidget {
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: (index) {
-        if (index < navigationItems.length) {
-          context.go(navigationItems[index].route);
+        if (index < primaryItems.length) {
+          context.go(primaryItems[index].route);
+        } else {
+          _MoreBottomSheet.show(context, overflowItems);
         }
       },
-      destinations: navigationItems
-          .map(
-            (item) => NavigationDestination(
-              icon: Icon(item.icon),
-              label: item.label,
-            ),
-          )
-          .toList(),
+      destinations: [
+        ...primaryItems.map(
+          (item) => NavigationDestination(
+            icon: Icon(item.icon),
+            label: item.label,
+          ),
+        ),
+        if (showMore)
+          NavigationDestination(
+            icon: overflowActive
+                ? const Icon(Icons.more_horiz)
+                : const Icon(Icons.more_horiz_outlined),
+            label: 'More',
+          ),
+      ],
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// "More" bottom sheet
+// ---------------------------------------------------------------------------
+
+class _MoreBottomSheet {
+  static void show(BuildContext context, List<NavigationItem> items) {
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ...items.map(
+                  (item) => ListTile(
+                    leading: Icon(item.icon),
+                    title: Text(item.label),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      context.go(item.route);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Model
+// ---------------------------------------------------------------------------
 
 class NavigationItem {
   final IconData icon;

@@ -36,6 +36,8 @@ class SalesRepositoryImpl implements SalesRepository {
     return {
       'payment_method': method,
       'items': items,
+      'customer_name': raw['customer_name'],
+      'customer_phone': raw['customer_phone'],
     };
   }
 

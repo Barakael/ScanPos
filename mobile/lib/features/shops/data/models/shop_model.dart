@@ -7,6 +7,7 @@ class ShopModel extends ShopEntity {
     super.address = '',
     super.phone = '',
     super.email = '',
+    super.taxRate = 0.0,
     super.currency = 'TZS',
     super.status = 'active',
     super.manager,
@@ -25,6 +26,7 @@ class ShopModel extends ShopEntity {
       address: json['address'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       email: json['email'] as String? ?? '',
+      taxRate: (json['tax_rate'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'TZS',
       status: 'active', // Default status since API doesn't include it in list
       manager: json['owner']?['name'] as String?,
@@ -48,6 +50,7 @@ class ShopModel extends ShopEntity {
       'address': address,
       'phone': phone,
       'email': email,
+      'tax_rate': taxRate,
       'currency': currency,
       'status': status,
       'manager_name': manager,

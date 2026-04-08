@@ -16,6 +16,7 @@ class ShopCreateRequested extends ShopEvent {
   final String address;
   final String phone;
   final String email;
+  final double taxRate;
   final String currency;
   final String ownerName;
   final String ownerEmail;
@@ -26,6 +27,7 @@ class ShopCreateRequested extends ShopEvent {
     required this.address,
     required this.phone,
     required this.email,
+    this.taxRate = 0.0,
     this.currency = 'TZS',
     required this.ownerName,
     required this.ownerEmail,
@@ -33,7 +35,7 @@ class ShopCreateRequested extends ShopEvent {
   });
 
   @override
-  List<Object?> get props => [name, address, phone, email, currency, ownerName, ownerEmail, ownerPassword];
+  List<Object?> get props => [name, address, phone, email, taxRate, currency, ownerName, ownerEmail, ownerPassword];
 }
 
 class ShopUpdateRequested extends ShopEvent {

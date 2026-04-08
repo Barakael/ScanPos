@@ -52,6 +52,12 @@ import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/presentation/bloc/user_bloc.dart';
 
+import '../../features/transactions/data/datasources/transactions_remote_datasource.dart';
+import '../../features/transactions/data/repositories/transactions_repository_impl.dart';
+import '../../features/transactions/domain/repositories/transactions_repository.dart';
+import '../../features/transactions/domain/usecases/get_transactions_usecase.dart';
+import '../../features/transactions/presentation/bloc/transactions_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> setupDependencies({required String baseUrl}) async {
@@ -175,5 +181,19 @@ Future<void> setupDependencies({required String baseUrl}) async {
 
   sl.registerFactory<UserBloc>(
     () => UserBloc(sl<UserRepository>()),
+  );
+
+  // Transactions
+  sl.registerSingleton<TransactionsRemoteDataSource>(
+    TransactionsRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+  sl.registerSingleton<TransactionsRepository>(
+    TransactionsRepositoryImpl(remoteDataSource: sl<TransactionsRemoteDataSource>()),
+  );
+  sl.registerSingleton<GetTransactionsUseCase>(
+    GetTransactionsUseCase(repository: sl<TransactionsRepository>()),
+  );
+  sl.registerFactory<TransactionsBloc>(
+    () => TransactionsBloc(getTransactionsUseCase: sl<GetTransactionsUseCase>()),
   );
 }
