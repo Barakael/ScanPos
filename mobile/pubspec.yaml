@@ -75,6 +75,9 @@ dependencies:
   google_fonts: ^6.2.1
 
   cupertino_icons: ^1.0.8
+  print_bluetooth_thermal: ^1.1.9
+  esc_pos_utils_plus: ^2.0.4
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../sales/domain/entities/sale_entity.dart';
 
@@ -334,7 +337,10 @@ class ReceiptDialog extends StatefulWidget {
 }
 
 class _ReceiptDialogState extends State<ReceiptDialog> {
+  static const String _printerMacKey = 'selected_printer_mac';
   bool _isPrinting = false;
+  bool _isConnectingPrinter = false;
+  String? _connectedPrinterName;
 
   String get _formattedDate =>
       DateFormat('MMM dd, yyyy  HH:mm').format(widget.sale.createdAt);
@@ -357,6 +363,175 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
     }
   }
 
+  Future<void> _connectPrinter() async {
+    if (_isConnectingPrinter || _isPrinting) return;
+    setState(() => _isConnectingPrinter = true);
+    try {
+      final hasPermission = await PrintBluetoothThermal.isPermissionBluetoothGranted;
+      if (!hasPermission) {
+        _showError('Bluetooth permission denied. Allow permissions and retry.');
+        return;
+      }
+
+      final enabled = await PrintBluetoothThermal.bluetoothEnabled;
+      if (!enabled) {
+        _showError('Bluetooth is off. Turn it on, then connect printer.');
+        return;
+      }
+
+      final pairedDevices = await PrintBluetoothThermal.pairedBluetooths;
+      if (pairedDevices.isEmpty) {
+        _showError('No paired printers found. Pair printer in device settings first.');
+        return;
+      }
+
+      if (!mounted) return;
+      final selected = await showModalBottomSheet<BluetoothInfo>(
+        context: context,
+        backgroundColor: _C.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (ctx) {
+          return SafeArea(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: pairedDevices.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (_, index) {
+                final device = pairedDevices[index];
+                return ListTile(
+                  leading: const Icon(Icons.print_rounded, color: _C.primary),
+                  title: Text(device.name.isEmpty ? 'Unknown Printer' : device.name),
+                  subtitle: Text(device.macAdress),
+                  onTap: () => Navigator.of(ctx).pop(device),
+                );
+              },
+            ),
+          );
+        },
+      );
+
+      if (selected == null) return;
+      final connected = await PrintBluetoothThermal.connect(
+        macPrinterAddress: selected.macAdress,
+      );
+      if (!connected) {
+        _showError('Failed to connect to ${selected.name}.');
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_printerMacKey, selected.macAdress);
+      if (!mounted) return;
+      setState(() {
+        _connectedPrinterName = selected.name.isEmpty ? 'Bluetooth Printer' : selected.name;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Printer connected successfully.')),
+      );
+    } catch (e) {
+      _showError('Printer connection failed: $e');
+    } finally {
+      if (mounted) setState(() => _isConnectingPrinter = false);
+    }
+  }
+
+  Future<bool> _ensurePrinterConnected() async {
+    final isConnected = await PrintBluetoothThermal.connectionStatus;
+    if (isConnected) return true;
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedMac = prefs.getString(_printerMacKey);
+    if (savedMac == null || savedMac.isEmpty) return false;
+
+    final connected = await PrintBluetoothThermal.connect(macPrinterAddress: savedMac);
+    if (!connected) return false;
+    return true;
+  }
+
+  Future<List<int>> _buildThermalTicketBytes(SaleEntity sale) async {
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(PaperSize.mm80, profile);
+    final List<int> bytes = [];
+    final dateStr = DateFormat('MMM dd, yyyy  HH:mm').format(sale.createdAt);
+
+    bytes.addAll(generator.reset());
+    bytes.addAll(generator.text(
+      'TERA POS',
+      styles: const PosStyles(
+        bold: true,
+        align: PosAlign.center,
+        width: PosTextSize.size2,
+        height: PosTextSize.size2,
+      ),
+    ));
+    bytes.addAll(generator.text(
+      'Point of Sale',
+      styles: const PosStyles(align: PosAlign.center),
+    ));
+    bytes.addAll(generator.hr());
+    bytes.addAll(generator.text('Receipt #${sale.id}'));
+    bytes.addAll(generator.text(dateStr));
+    bytes.addAll(generator.hr());
+
+    for (final item in sale.items) {
+      bytes.addAll(generator.text(
+        item.productName,
+        styles: const PosStyles(bold: true),
+      ));
+      bytes.addAll(generator.row([
+        PosColumn(text: '${item.quantity} x', width: 2),
+        PosColumn(text: CurrencyFormatter.format(item.unitPrice), width: 5),
+        PosColumn(
+          text: CurrencyFormatter.format(item.subtotal),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]));
+    }
+
+    bytes.addAll(generator.hr());
+    bytes.addAll(generator.row([
+      PosColumn(text: 'Subtotal', width: 6),
+      PosColumn(
+        text: CurrencyFormatter.format(sale.subtotal),
+        width: 6,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+    ]));
+    bytes.addAll(generator.row([
+      PosColumn(text: 'VAT (18%)', width: 6),
+      PosColumn(
+        text: CurrencyFormatter.format(sale.totalVat),
+        width: 6,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+    ]));
+    bytes.addAll(generator.row([
+      PosColumn(text: 'TOTAL', width: 6, styles: const PosStyles(bold: true)),
+      PosColumn(
+        text: CurrencyFormatter.format(sale.total),
+        width: 6,
+        styles: const PosStyles(align: PosAlign.right, bold: true),
+      ),
+    ]));
+    bytes.addAll(generator.feed(1));
+    bytes.addAll(generator.text('Paid via: ${_payLabel(sale.paymentMethod)}'));
+    bytes.addAll(generator.feed(1));
+    bytes.addAll(generator.text(
+      'Thank you for your purchase!',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
+    ));
+    bytes.addAll(generator.text(
+      'Powered by Tera POS',
+      styles: const PosStyles(align: PosAlign.center),
+    ));
+    bytes.addAll(generator.feed(2));
+    bytes.addAll(generator.cut());
+    return bytes;
+  }
+
   // ── Print via system dialog ────────────────────────────────────────────
   Future<void> _printReceipt() async {
     if (_isPrinting) return;
@@ -364,12 +539,21 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
     HapticFeedback.mediumImpact();
 
     try {
-      final pdfBytes = await _buildReceiptPdf(widget.sale);
-      // Opens Android print picker / iOS AirPrint / Windows/macOS print dialog
-      await Printing.layoutPdf(
-        onLayout: (_) async => pdfBytes,
-        name: 'Receipt_${widget.sale.id}',
-      );
+      final printerConnected = await _ensurePrinterConnected();
+      if (printerConnected) {
+        final ticket = await _buildThermalTicketBytes(widget.sale);
+        final ok = await PrintBluetoothThermal.writeBytes(ticket);
+        if (!ok) {
+          _showError('Failed to print on Bluetooth printer.');
+        }
+      } else {
+        final pdfBytes = await _buildReceiptPdf(widget.sale);
+        // Fallback for systems without thermal bluetooth printer
+        await Printing.layoutPdf(
+          onLayout: (_) async => pdfBytes,
+          name: 'Receipt_${widget.sale.id}',
+        );
+      }
     } catch (e) {
       _showError('Print failed: $e');
     } finally {
@@ -482,6 +666,9 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
               // ── Fixed action buttons ──────────────────────────
               _ActionBar(
                 isPrinting: _isPrinting,
+                isConnectingPrinter: _isConnectingPrinter,
+                connectedPrinterName: _connectedPrinterName,
+                onConnectPrinter: _connectPrinter,
                 onPrint:    _printReceipt,
                 onShare:    _sharePdf,
                 onClose:    widget.onClose,
@@ -731,11 +918,17 @@ class _HRule extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.isPrinting,
+    required this.isConnectingPrinter,
+    required this.connectedPrinterName,
+    required this.onConnectPrinter,
     required this.onPrint,
     required this.onShare,
     required this.onClose,
   });
   final bool         isPrinting;
+  final bool         isConnectingPrinter;
+  final String?      connectedPrinterName;
+  final VoidCallback onConnectPrinter;
   final VoidCallback onPrint;
   final VoidCallback onShare;
   final VoidCallback onClose;
@@ -753,6 +946,46 @@ class _ActionBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (connectedPrinterName != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.bluetooth_connected_rounded,
+                      size: 16, color: _C.accent),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Connected: $connectedPrinterName',
+                      style: _ts(12, color: _C.inkMid, weight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: (isPrinting || isConnectingPrinter) ? null : onConnectPrinter,
+              icon: isConnectingPrinter
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: _C.inkMid),
+                    )
+                  : const Icon(Icons.bluetooth_searching_rounded, size: 16),
+              label: Text(isConnectingPrinter ? 'Connecting…' : 'Connect Printer'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                foregroundColor: _C.inkMid,
+                side: const BorderSide(color: _C.border),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           // Print + Share
           Row(
             children: [
