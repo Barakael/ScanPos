@@ -81,6 +81,17 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 600;
+    final isWebView = size.width > 900;
+    
+    // Responsive values
+    final logoSize = isSmallScreen ? 42.0 : 56.0;
+    final logoPadding = isSmallScreen ? 12.0 : 16.0;
+    final titleFontSize = isSmallScreen ? 28.0 : 36.0;
+    final subtitleFontSize = isSmallScreen ? 14.0 : 16.0;
+    final descriptionFontSize = isSmallScreen ? 16.0 : 18.0;
+    final horizontalPadding = isSmallScreen ? 24.0 : 40.0;
+    final cardMaxWidth = isWebView ? 480.0 : double.infinity;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -126,209 +137,218 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   child: SlideTransition(
                     position: _slideAnim,
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 40),
-
-                          // Logo + Title
-                          Row(
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: isWebView ? 1000 : double.infinity,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF0EA5E9)]),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF3B82F6).withOpacity(0.4),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Image.asset(
-                                  'assets/images/logo/logo.png',
-                                  width: 42,
-                                  height: 42,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.point_of_sale_rounded,
-                                    color: Colors.white,
-                                    size: 42,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              SizedBox(height: isSmallScreen ? 40 : 60),
+
+                              // Logo + Title
+                              Row(
                                 children: [
-                                  Text(
-                                    'Tera POS',
-                                    style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Point of Sale System',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white54,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 60),
-
-                          const Text(
-                            'Welcome Back',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.05,
-                              letterSpacing: -1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sign in to continue to your dashboard',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withOpacity(0.6),
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-
-                          const SizedBox(height: 50),
-
-                          // Login Card
-                          Container(
-                            padding: const EdgeInsets.all(28),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(28),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 15),
-                                ),
-                              ],
-                            ),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                children: [
-                                  _ModernTextField(
-                                    controller: _emailController,
-                                    label: 'Email Address',
-                                    hint: 'you@business.com',
-                                    icon: Icons.alternate_email_rounded,
-                                    keyboardType: TextInputType.emailAddress,
-                                    validator: Validators.email,
-                                    textInputAction: TextInputAction.next,
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  _ModernTextField(
-                                    controller: _passwordController,
-                                    label: 'Password',
-                                    hint: '••••••••',
-                                    icon: Icons.lock_outline_rounded,
-                                    obscureText: _obscurePassword,
-                                    validator: Validators.password,
-                                    textInputAction: TextInputAction.done,
-                                    onFieldSubmitted: _submit,        // ← Fixed here
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                        color: const Color(0xFF64748B),
-                                      ),
-                                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 12),
-
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton(
-                                      onPressed: () {},
-                                      child: const Text(
-                                        'Forgot Password?',
-                                        style: TextStyle(
-                                          color: Color(0xFF3B82F6),
-                                          fontWeight: FontWeight.w600,
+                                  Container(
+                                    padding: EdgeInsets.all(logoPadding),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF0EA5E9)]),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF3B82F6).withOpacity(0.4),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
                                         ),
+                                      ],
+                                    ),
+                                    child: Image.asset(
+                                      'assets/images/logo/logo.png',
+                                      width: logoSize,
+                                      height: logoSize,
+                                      errorBuilder: (_, __, ___) => Icon(
+                                        Icons.point_of_sale_rounded,
+                                        color: Colors.white,
+                                        size: logoSize,
                                       ),
                                     ),
                                   ),
-
-                                  const SizedBox(height: 32),
-
-                                  _ModernSignInButton(
-                                    isLoading: _isLoading,
-                                    onPressed: _submit,
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  // Register Link
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        "Don't have an account? ",
-                                        style: TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                      GestureDetector(
-                                        onTap: () {
-                                          print('Navigating to register');
-                                          GoRouter.of(context).go('/register');
-                                        },
-                                        child: const Text(
-                                          'Register',
+                                  SizedBox(width: isSmallScreen ? 16 : 24),
+                                  Flexible(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Tera VFD',
                                           style: TextStyle(
-                                            color: Color(0xFF3B82F6),
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                            decoration: TextDecoration.underline,
-                                            decorationColor: Color(0xFF3B82F6),
+                                            fontSize: titleFontSize,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                            letterSpacing: -0.5,
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          'Point of Sale System',
+                                          style: TextStyle(
+                                            fontSize: subtitleFontSize,
+                                            color: Colors.white54,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
 
-                          const SizedBox(height: 40),
-                          Center(
-                            child: Text(
-                              '© 2026 Tera POS',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.4),
-                                fontSize: 12,
+                              SizedBox(height: isSmallScreen ? 50 : 70),
+
+                              // Description
+                              const SizedBox(height: 8),
+                              Text(
+                                'Sign in to continue to your dashboard',
+                                style: TextStyle(
+                                  fontSize: descriptionFontSize,
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontWeight: FontWeight.w400,
+                                ),
                               ),
-                            ),
+
+                              SizedBox(height: isSmallScreen ? 40 : 60),
+
+                              // Login Card - Centered on wide screens
+                              Center(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: cardMaxWidth,
+                                  ),
+                                  child: Container(
+                                    padding: EdgeInsets.all(isSmallScreen ? 24 : 32),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(28),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.08),
+                                          blurRadius: 30,
+                                          offset: const Offset(0, 15),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Form(
+                                      key: _formKey,
+                                      child: Column(
+                                        children: [
+                                          _ModernTextField(
+                                            controller: _emailController,
+                                            label: 'Email Address',
+                                            hint: 'you@business.com',
+                                            icon: Icons.alternate_email_rounded,
+                                            keyboardType: TextInputType.emailAddress,
+                                            validator: Validators.email,
+                                            textInputAction: TextInputAction.next,
+                                          ),
+
+                                          SizedBox(height: isSmallScreen ? 20 : 28),
+
+                                          _ModernTextField(
+                                            controller: _passwordController,
+                                            label: 'Password',
+                                            hint: '••••••••',
+                                            icon: Icons.lock_outline_rounded,
+                                            obscureText: _obscurePassword,
+                                            validator: Validators.password,
+                                            textInputAction: TextInputAction.done,
+                                            onFieldSubmitted: _submit,
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                                color: const Color(0xFF64748B),
+                                              ),
+                                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                            ),
+                                          ),
+
+                                          SizedBox(height: isSmallScreen ? 10 : 12),
+
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: TextButton(
+                                              onPressed: () {},
+                                              child: const Text(
+                                                'Forgot Password?',
+                                                style: TextStyle(
+                                                  color: Color(0xFF3B82F6),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(height: isSmallScreen ? 24 : 32),
+
+                                          _ModernSignInButton(
+                                            isLoading: _isLoading,
+                                            onPressed: _submit,
+                                          ),
+
+                                          SizedBox(height: isSmallScreen ? 20 : 28),
+
+                                          // Register Link
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                "Don't have an account? ",
+                                                style: TextStyle(
+                                                  color: Colors.black54,
+                                                  fontSize: isSmallScreen ? 14 : 15,
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              ),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  print('Navigating to register');
+                                                  GoRouter.of(context).go('/register');
+                                                },
+                                                child: Text(
+                                                  'Register',
+                                                  style: TextStyle(
+                                                    color: const Color(0xFF3B82F6),
+                                                    fontSize: isSmallScreen ? 14 : 15,
+                                                    fontWeight: FontWeight.w600,
+                                                    decoration: TextDecoration.underline,
+                                                    decorationColor: const Color(0xFF3B82F6),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: isSmallScreen ? 30 : 50),
+
+                              Center(
+                                child: Text(
+                                  '© 2026 Tera POS',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.4),
+                                    fontSize: isSmallScreen ? 11 : 12,
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: isSmallScreen ? 20 : 32),
+                            ],
                           ),
-                          const SizedBox(height: 24),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -402,18 +422,20 @@ class _ModernTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: isSmallScreen ? 13 : 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF475569),
+            color: const Color(0xFF475569),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isSmallScreen ? 6 : 8),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -421,15 +443,15 @@ class _ModernTextField extends StatelessWidget {
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted!() : null,
-          style: const TextStyle(fontSize: 16, color: Color(0xFF0F172A)),
+          style: TextStyle(fontSize: isSmallScreen ? 15 : 16, color: const Color(0xFF0F172A)),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
+            hintStyle: TextStyle(color: const Color(0xFF94A3B8), fontSize: isSmallScreen ? 14 : 15),
             prefixIcon: Icon(icon, color: const Color(0xFF64748B)),
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+            contentPadding: EdgeInsets.symmetric(vertical: isSmallScreen ? 16 : 18, horizontal: 20),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -465,11 +487,13 @@ class _ModernSignInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    
     return GestureDetector(
       onTap: isLoading ? null : onPressed,
       child: Container(
         width: double.infinity,
-        height: 58,
+        height: isSmallScreen ? 56 : 60,
         decoration: BoxDecoration(
           gradient: isLoading
               ? const LinearGradient(colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)])
@@ -499,20 +523,20 @@ class _ModernSignInButton extends StatelessWidget {
                     strokeWidth: 2.5,
                   ),
                 )
-              : const Row(
+              : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Sign In',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 17,
+                        fontSize: isSmallScreen ? 16 : 17,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    SizedBox(width: 12),
-                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
                   ],
                 ),
         ),

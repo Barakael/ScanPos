@@ -24,6 +24,11 @@ return [
         'http://127.0.0.1:5173',
         'http://localhost:5174',
         'http://127.0.0.1:5174',
+        // Flutter web dev ports
+        'http://localhost:58438',
+        'http://127.0.0.1:58438',
+        'http://localhost:8888',
+        'http://127.0.0.1:8888',
         // Mobile app origins
         'http://localhost:3000',
         'http://127.0.0.1:3000',
@@ -36,6 +41,8 @@ return [
     ],
 
     'allowed_origins_patterns' => [
+        '#^http://localhost(:[0-9]+)?$#',
+        '#^http://127\.0\.0\.1(:[0-9]+)?$#',
         '#^https://[a-zA-Z0-9\-]+\.ngrok-free\.app$#',
         '#^https://[a-zA-Z0-9\-]+\.ngrok\.io$#',
     ],
