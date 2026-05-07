@@ -1,5 +1,7 @@
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/api/api_service.dart';
+import '../../../../core/error/app_exception.dart';
+import '../../../../core/error/failure.dart';
 import '../models/user_model.dart';
 import 'auth_remote_datasource.dart';
 
@@ -24,7 +26,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return result.fold(
         (failure) {
           print('API Failure: ${failure.message}'); // Debug log
-          throw Exception(failure.message);
+          if (failure is UnauthorizedFailure) {
+            throw UnauthorizedException(message: failure.message);
+          }
+          if (failure is NetworkFailure) {
+            throw NetworkException(message: failure.message);
+          }
+          if (failure is ServerFailure) {
+            throw ServerException(
+              message: failure.message,
+              statusCode: failure.statusCode,
+            );
+          }
+
+          throw ServerException(message: failure.message);
         },
         (response) {
           print('API Response: $response'); // Debug log

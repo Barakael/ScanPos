@@ -38,7 +38,7 @@ class _T {
   static const Gradient pageBg = LinearGradient(
     begin: Alignment.topCenter,
     end:   Alignment.bottomCenter,
-    colors: [Color(0xFFFDFBF9), Color(0xFFF5F3EF)],
+    colors: [Color(0xFFFBFAF8), Color(0xFFF1EFEA)],
   );
 
   // Shadow
@@ -75,12 +75,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   late final AnimationController _fadeCtrl;
   late final Animation<double>   _fadeAnim;
+  late final Animation<Offset>   _slideAnim;
 
   @override
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(
+      CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOutCubic),
+    );
     Future.microtask(() { if (mounted) _fadeCtrl.forward(); });
   }
 
@@ -155,23 +159,22 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   ),
                 ),
 
-<<<<<<< HEAD
-              SafeArea(
-                child: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: SlideTransition(
-                    position: _slideAnim,
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: isWebView ? 1000 : double.infinity,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(height: isSmallScreen ? 40 : 60),
+                SafeArea(
+                  child: FadeTransition(
+                    opacity: _fadeAnim,
+                    child: SlideTransition(
+                      position: _slideAnim,
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: isWebView ? 1000 : double.infinity,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(height: isSmallScreen ? 40 : 60),
 
                               // Logo + Title
                               Row(
@@ -179,15 +182,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                   Container(
                                     padding: EdgeInsets.all(logoPadding),
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF0EA5E9)]),
+                                      color: Colors.white,
                                       borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF3B82F6).withOpacity(0.4),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 8),
-                                        ),
-                                      ],
+                                      border: Border.all(color: _T.border, width: 1.2),
+                                      boxShadow: _T.cardShadow,
                                     ),
                                     child: Image.asset(
                                       'assets/images/logo/logo.png',
@@ -195,7 +193,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                       height: logoSize,
                                       errorBuilder: (_, __, ___) => Icon(
                                         Icons.point_of_sale_rounded,
-                                        color: Colors.white,
+                                        color: _T.accent,
                                         size: logoSize,
                                       ),
                                     ),
@@ -210,7 +208,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                           style: TextStyle(
                                             fontSize: titleFontSize,
                                             fontWeight: FontWeight.w800,
-                                            color: Colors.white,
+                                            color: _T.ink,
                                             letterSpacing: -0.5,
                                           ),
                                         ),
@@ -218,7 +216,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                           'Point of Sale System',
                                           style: TextStyle(
                                             fontSize: subtitleFontSize,
-                                            color: Colors.white54,
+                                            color: _T.inkMid,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -236,19 +234,19 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                 'Sign in to continue to your dashboard',
                                 style: TextStyle(
                                   fontSize: descriptionFontSize,
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: _T.inkMid,
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
 
                               SizedBox(height: isSmallScreen ? 40 : 60),
 
-                              // Login Card - Centered on wide screens
-                              Center(
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: cardMaxWidth,
-                                  ),
+                                // Login Card - Centered on wide screens
+                                Center(
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: cardMaxWidth,
+                                    ),
                                   child: Container(
                                     padding: EdgeInsets.all(isSmallScreen ? 24 : 32),
                                     decoration: BoxDecoration(
@@ -266,9 +264,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                       key: _formKey,
                                       child: Column(
                                         children: [
-                                          _ModernTextField(
+                                          const Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: _FieldLabel('Email Address'),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          _InputField(
                                             controller: _emailController,
-                                            label: 'Email Address',
                                             hint: 'you@business.com',
                                             icon: Icons.alternate_email_rounded,
                                             keyboardType: TextInputType.emailAddress,
@@ -278,21 +280,22 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
                                           SizedBox(height: isSmallScreen ? 20 : 28),
 
-                                          _ModernTextField(
+                                          const Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: _FieldLabel('Password'),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          _InputField(
                                             controller: _passwordController,
-                                            label: 'Password',
                                             hint: '••••••••',
                                             icon: Icons.lock_outline_rounded,
                                             obscureText: _obscurePassword,
                                             validator: Validators.password,
                                             textInputAction: TextInputAction.done,
                                             onFieldSubmitted: _submit,
-                                            suffixIcon: IconButton(
-                                              icon: Icon(
-                                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                                color: const Color(0xFF64748B),
-                                              ),
-                                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                            suffixIcon: _VisibilityToggle(
+                                              obscure: _obscurePassword,
+                                              onTap: () => setState(() => _obscurePassword = !_obscurePassword),
                                             ),
                                           ),
 
@@ -314,7 +317,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
                                           SizedBox(height: isSmallScreen ? 24 : 32),
 
-                                          _ModernSignInButton(
+                                          _SubmitButton(
+                                            label: 'Sign In',
                                             isLoading: _isLoading,
                                             onPressed: _submit,
                                           ),
@@ -371,198 +375,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               ),
 
                               SizedBox(height: isSmallScreen ? 20 : 32),
-                            ],
-                          ),
-=======
-                SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: size.height - 80),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 48),
-
-                            // ── Logo + wordmark ─────────────────────────
-                            Row(
-                              children: [
-                                _LogoBadge(),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Tera POS',
-                                      style: GoogleFonts.playfairDisplay(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: _T.ink,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Business Management',
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 11,
-                                        color: _T.inkSoft,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
-
-                            const SizedBox(height: 52),
-
-                            // ── Headline ─────────────────────────────────
-                            Text(
-                              'Welcome back',
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 38,
-                                fontWeight: FontWeight.w700,
-                                color: _T.ink,
-                                height: 1.1,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Sign in to manage your business',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 15,
-                                color: _T.inkMid,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-
-                            const SizedBox(height: 40),
-
-                            // ── Card ─────────────────────────────────────
-                            Container(
-                              padding: const EdgeInsets.all(28),
-                              decoration: BoxDecoration(
-                                color: _T.bgPanel,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: _T.cardShadow,
-                              ),
-                              child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-
-                                    // Email
-                                    _FieldLabel('Email address'),
-                                    const SizedBox(height: 8),
-                                    _InputField(
-                                      controller: _emailController,
-                                      hint:       'you@company.com',
-                                      icon:       Icons.mail_outline_rounded,
-                                      keyboardType: TextInputType.emailAddress,
-                                      validator:  Validators.email,
-                                      textInputAction: TextInputAction.next,
-                                    ),
-
-                                    const SizedBox(height: 20),
-
-                                    // Password
-                                    _FieldLabel('Password'),
-                                    const SizedBox(height: 8),
-                                    _InputField(
-                                      controller: _passwordController,
-                                      hint:       'Enter your password',
-                                      icon:       Icons.lock_outline_rounded,
-                                      obscureText: _obscurePassword,
-                                      validator:  Validators.password,
-                                      textInputAction: TextInputAction.done,
-                                      onFieldSubmitted: _submit,
-                                      suffixIcon: _VisibilityToggle(
-                                        obscure:  _obscurePassword,
-                                        onTap:    () => setState(() => _obscurePassword = !_obscurePassword),
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 12),
-
-                                    // Forgot password
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: GestureDetector(
-                                        onTap: () {},
-                                        child: Text(
-                                          'Forgot password?',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: _T.accent,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 28),
-
-                                    // Sign in button
-                                    _SubmitButton(
-                                      label:     'Sign In',
-                                      isLoading: _isLoading,
-                                      onPressed: _submit,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 28),
-
-                            // Register link
-                            Center(
-                              child: RichText(
-                                text: TextSpan(
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 14,
-                                    color: _T.inkMid,
-                                  ),
-                                  children: [
-                                    const TextSpan(text: "Don't have an account? "),
-                                    WidgetSpan(
-                                      child: GestureDetector(
-                                        onTap: () => GoRouter.of(context).go('/register'),
-                                        child: Text(
-                                          'Create one',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: _T.accent,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const Spacer(),
-
-                            // Footer
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 20),
-                              child: Center(
-                                child: Text(
-                                  '© 2026 Tera POS',
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 12,
-                                    color: _T.inkSoft,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
->>>>>>> 640d20165eaea23c4eb2a9a51e596a96aebbeb38
+                          ),
                         ),
                       ),
                     ),
@@ -674,83 +489,27 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isSmallScreen ? 13 : 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF475569),
-          ),
-        ),
-        SizedBox(height: isSmallScreen ? 6 : 8),
-        TextFormField(
-          controller: controller,
-          obscureText: obscureText,
-          validator: validator,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted!() : null,
-          style: TextStyle(fontSize: isSmallScreen ? 15 : 16, color: const Color(0xFF0F172A)),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: const Color(0xFF94A3B8), fontSize: isSmallScreen ? 14 : 15),
-            prefixIcon: Icon(icon, color: const Color(0xFF64748B)),
-            suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            contentPadding: EdgeInsets.symmetric(vertical: isSmallScreen ? 16 : 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.redAccent),
-            ),
-          ),
-=======
     return TextFormField(
-      controller:       controller,
-      obscureText:      obscureText,
-      validator:        validator,
-      keyboardType:     keyboardType,
-      textInputAction:  textInputAction,
+      controller: controller,
+      obscureText: obscureText,
+      validator: validator,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted!() : null,
-      style: GoogleFonts.dmSans(
-        fontSize: 15,
-        color: _T.ink,
-        fontWeight: FontWeight.w500,
-      ),
+      style: TextStyle(fontSize: isSmallScreen ? 15 : 16, color: _T.ink),
       decoration: InputDecoration(
-        hintText:  hint,
-        hintStyle: GoogleFonts.dmSans(color: _T.inkSoft, fontSize: 14.5),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 14, right: 10),
-          child: Icon(icon, color: _T.inkSoft, size: 18),
-        ),
-        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        hintText: hint,
+        hintStyle: GoogleFonts.dmSans(color: _T.inkSoft, fontSize: isSmallScreen ? 14 : 15),
+        prefixIcon: Icon(icon, color: _T.inkSoft),
         suffixIcon: suffixIcon,
-        filled:    true,
+        filled: true,
         fillColor: _T.bgInput,
-        contentPadding: const EdgeInsets.symmetric(vertical: 17, horizontal: 16),
+        contentPadding: EdgeInsets.symmetric(vertical: isSmallScreen ? 16 : 18, horizontal: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
->>>>>>> 640d20165eaea23c4eb2a9a51e596a96aebbeb38
+          borderSide: const BorderSide(color: _T.border, width: 1.2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -802,7 +561,6 @@ class _SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
     
     return GestureDetector(
@@ -843,7 +601,7 @@ class _SubmitButton extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Sign In',
+                      label,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: isSmallScreen ? 16 : 17,
@@ -854,39 +612,8 @@ class _SubmitButton extends StatelessWidget {
                     const SizedBox(width: 12),
                     const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
                   ],
-=======
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _T.accent,
-          disabledBackgroundColor: _T.border,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+                ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
->>>>>>> 640d20165eaea23c4eb2a9a51e596a96aebbeb38
-                ),
-              )
-            : Text(
-                label,
-                style: GoogleFonts.dmSans(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
       ),
     );
   }

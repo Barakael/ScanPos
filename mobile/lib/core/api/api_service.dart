@@ -168,6 +168,12 @@ class ApiService {
       case DioExceptionType.badResponse:
         final message = _extractErrorMessage(e.response?.data);
         if (e.response?.statusCode == 401) return UnauthorizedFailure();
+        if (e.response?.statusCode == 422) {
+          return ServerFailure(
+            message: message.isEmpty ? 'Validation failed' : message,
+            statusCode: 422,
+          );
+        }
         return ServerFailure(message: message, statusCode: e.response?.statusCode);
       case DioExceptionType.cancel:
         return const UnexpectedFailure(message: 'Request cancelled');

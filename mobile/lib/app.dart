@@ -77,13 +77,6 @@ class _AppState extends State<App> with TickerProviderStateMixin {
 
     _appRouter = AppRouter(secureStorage: sl<SecureStorage>());
 
-    // Check authentication status on app startup
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<AuthBloc>().add(const AuthCheckStatusRequested());
-      }
-    });
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _logoController.forward();
@@ -252,7 +245,9 @@ class _AppState extends State<App> with TickerProviderStateMixin {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
+        BlocProvider<AuthBloc>(
+          create: (_) => sl<AuthBloc>()..add(const AuthCheckStatusRequested()),
+        ),
         BlocProvider<SalesBloc>(create: (_) => sl<SalesBloc>()),
         BlocProvider<ProductsBloc>(create: (_) => sl<ProductsBloc>()),
         BlocProvider<AnalyticsBloc>(create: (_) => sl<AnalyticsBloc>()),
