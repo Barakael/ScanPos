@@ -6,10 +6,10 @@ class AnalyticsRemoteDataSource {
   final ApiClient apiClient;
   const AnalyticsRemoteDataSource({required this.apiClient});
 
-  Future<AnalyticsModel> getAnalytics() =>
-      apiClient.get<AnalyticsModel>(
-        endpoint: ApiEndpoints.dashboard,
-        parser: (json) => AnalyticsModel.fromDashboardJson(
+  Future<AnalyticsModel> getAnalytics({String? date}) =>
+    apiClient.get<AnalyticsModel>(
+      endpoint: ApiEndpoints.dashboard,
+      parser: (json) => AnalyticsModel.fromDashboardJson(
           json as Map<String, dynamic>,
         ),
       );

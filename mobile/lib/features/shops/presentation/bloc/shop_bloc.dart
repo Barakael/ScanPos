@@ -38,6 +38,7 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
         address: event.address,
         phone: event.phone,
         email: event.email,
+        taxRate: event.taxRate,
         currency: event.currency,
         ownerName: event.ownerName,
         ownerEmail: event.ownerEmail,

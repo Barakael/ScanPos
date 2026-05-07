@@ -14,6 +14,7 @@ class RouteNames {
   static const String users = '/users';
   static const String shops = '/shops';
   static const String staff = '/staff';
+  static const String transactions = '/transactions';
   static const String settings = '/settings';
 
   /// History / manual sales (not in web sidebar; used from POS and dashboard).

@@ -35,34 +35,70 @@ class ShopRepositoryImpl implements ShopRepository {
     required String address,
     required String phone,
     required String email,
+    double taxRate = 0.0,
     String currency = 'TZS',
     required String ownerName,
     required String ownerEmail,
     required String ownerPassword,
   }) async {
     try {
+      print('[DEBUG] Creating shop with data: {');
+      print('  name: $name,');
+      print('  address: $address,');
+      print('  phone: $phone,');
+      print('  email: $email,');
+      print('  tax_rate: $taxRate,');
+      print('  currency: $currency,');
+      print('  owner_name: $ownerName,');
+      print('  owner_email: $ownerEmail,');
+      print('  owner_password: [HIDDEN]');
+      print('}');
+      
       final response = await _apiClient.post<Map<String, dynamic>>(
         endpoint: '/shops',
-        parser: (json) => json['shop'] as Map<String, dynamic>,
+        parser: (json) {
+          print('[DEBUG] Raw API response: $json');
+          if (json == null) {
+            print('[DEBUG] Response is null!');
+            throw Exception('API response is null');
+          }
+          if (json is! Map<String, dynamic>) {
+            print('[DEBUG] Response is not a Map: ${json.runtimeType}');
+            throw Exception('API response is not a Map');
+          }
+          if (!json.containsKey('shop')) {
+            print('[DEBUG] Response does not contain "shop" key. Keys: ${json.keys}');
+            throw Exception('API response does not contain shop data');
+          }
+          final shopData = json['shop'] as Map<String, dynamic>;
+          print('[DEBUG] Shop data extracted: $shopData');
+          return shopData;
+        },
         data: {
           'name': name,
           'address': address,
           'phone': phone,
           'email': email,
+          'tax_rate': taxRate,
           'currency': currency,
           'owner_name': ownerName,
           'owner_email': ownerEmail,
           'owner_password': ownerPassword,
         },
       );
+      print('[DEBUG] Creating ShopModel from response...');
       return ShopModel.fromJson(response);
     } on ServerException catch (e) {
+      print('[DEBUG] ServerException: ${e.message}');
       throw Exception('Failed to create shop: ${e.message}');
     } on NetworkException catch (e) {
+      print('[DEBUG] NetworkException: ${e.message}');
       throw Exception('Network error: ${e.message}');
     } on UnauthorizedException catch (e) {
+      print('[DEBUG] UnauthorizedException: ${e.message}');
       throw Exception('Unauthorized: ${e.message}');
     } catch (e) {
+      print('[DEBUG] Generic exception: $e');
       throw Exception('Failed to create shop: $e');
     }
   }

@@ -6,6 +6,62 @@ import '../bloc/shop_event.dart';
 import '../bloc/shop_state.dart';
 import '../../domain/entities/shop_entity.dart';
 
+// ════════════════════════════════════════════════════════════════════════════
+// DESIGN TOKENS — matches POS page exactly
+// ════════════════════════════════════════════════════════════════════════════
+class _T {
+  static const bg         = Color(0xFFF5F6FA);
+  static const white      = Color(0xFFFFFFFF);
+  static const card       = Color(0xFFFFFFFF);
+  static const primary    = Color(0xFF1E3A5F);
+  static const primaryLt  = Color(0xFF2B527A);
+  static const primarySoft = Color(0x1A1E3A5F); // primary @ 10%
+  static const accent     = Color(0xFF00C896);
+  static const accentSoft = Color(0x1A00C896);
+  static const danger     = Color(0xFFFF4D4D);
+  static const dangerSoft = Color(0x1AFF4D4D);
+  static const warn       = Color(0xFFFFA726);
+  static const warnSoft   = Color(0x1AFFA726);
+  static const ink        = Color(0xFF1A2332);
+  static const inkMid     = Color(0xFF64748B);
+  static const inkLight   = Color(0xFFCBD5E1);
+  static const inkDim     = Color(0xFF64748B);
+  static const border     = Color(0xFFE8EDF5);
+
+  static TextStyle ts(
+    double size, {
+    FontWeight weight = FontWeight.w400,
+    Color color = ink,
+    double? height,
+    double? letterSpacing,
+  }) =>
+      TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        color: color,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
+
+  static Color primaryOpacity(double o) => primary.withOpacity(o);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: primary.withOpacity(0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static List<BoxShadow> get floatShadow => [
+        BoxShadow(
+          color: primary.withOpacity(0.18),
+          blurRadius: 28,
+          offset: const Offset(0, 8),
+        ),
+      ];
+}
+
 class ShopsPage extends StatefulWidget {
   const ShopsPage({super.key});
 
@@ -21,27 +77,6 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
   String _selectedTab = 'All';
   bool _isSearchVisible = false;
 
-  // ── Palette ──────────────────────────────────────────────────────────────
-  static const _void       = Color(0xFF09090F);
-  static const _surface    = Color(0xFF111118);
-  static const _panel      = Color(0xFF16161F);
-  static const _card       = Color(0xFF1C1C28);
-  static const _border     = Color(0x18FFFFFF);
-  static const _borderStrong = Color(0x28FFFFFF);
-  static const _ink        = Color(0xFFF0F0FF);
-  static const _inkMid     = Color(0xFF8B8BA8);
-  static const _inkDim     = Color(0xFF4A4A62);
-  static const _gold       = Color(0xFFF5C842);
-  static const _goldSoft   = Color(0x20F5C842);
-  static const _teal       = Color(0xFF00D9A3);
-  static const _tealSoft   = Color(0x1A00D9A3);
-  static const _coral      = Color(0xFFFF5F6D);
-  static const _coralSoft  = Color(0x1AFF5F6D);
-  static const _indigo     = Color(0xFF7B68EE);
-  static const _indigoSoft = Color(0x1F7B68EE);
-  static const _amber      = Color(0xFFFF9F43);
-  static const _amberSoft  = Color(0x1FFF9F43);
-
   @override
   void initState() {
     super.initState();
@@ -53,15 +88,11 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
       parent: _animController,
       curve: Curves.easeOutCubic,
     );
-    
-    // Start fetching data immediately
+
     context.read<ShopBloc>().add(const ShopRequested());
-    
-    // Start entrance animation after a short delay
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _animController.forward();
-      }
+      if (mounted) _animController.forward();
     });
   }
 
@@ -92,7 +123,7 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
   void _showToast(String message, String type) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar( 
+      SnackBar(
         content: Row(
           children: [
             Icon(
@@ -103,12 +134,16 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
               size: 16,
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(message, style: const TextStyle(fontSize: 13))),
+            Expanded(
+                child: Text(message,
+                    style: const TextStyle(fontSize: 13))),
           ],
         ),
-        backgroundColor: type == 'success' ? _teal : _coral,
+        backgroundColor:
+            type == 'success' ? _T.accent : _T.danger,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
         duration: const Duration(seconds: 2),
       ),
@@ -121,17 +156,19 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ShopFormSheet(
-        onSave: (name, address, phone, email, currency, ownerName, ownerEmail, ownerPassword) {
+        onSave: (name, address, phone, email, currency, ownerName,
+            ownerEmail, ownerPassword) {
           context.read<ShopBloc>().add(ShopCreateRequested(
-            name: name, 
-            address: address, 
-            phone: phone, 
-            email: email,
-            currency: currency,
-            ownerName: ownerName,
-            ownerEmail: ownerEmail,
-            ownerPassword: ownerPassword,
-          ));
+                name: name,
+                address: address,
+                phone: phone,
+                email: email,
+                taxRate: 0.0,
+                currency: currency,
+                ownerName: ownerName,
+                ownerEmail: ownerEmail,
+                ownerPassword: ownerPassword,
+              ));
           Navigator.of(context).pop();
         },
       ),
@@ -147,13 +184,13 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
         shop: shop,
         onSave: (name, address, phone, email, currency, _, __, ___) {
           context.read<ShopBloc>().add(ShopUpdateRequested(
-              id: shop.id, 
-              name: name, 
-              address: address, 
-              phone: phone, 
-              email: email,
-              currency: currency,
-          ));
+                id: shop.id,
+                name: name,
+                address: address,
+                phone: phone,
+                email: email,
+                currency: currency,
+              ));
           Navigator.of(context).pop();
         },
       ),
@@ -173,21 +210,26 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: _card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: _T.card,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Delete Shop',
           style: TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w700, color: _ink),
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _T.ink),
         ),
         content: Text(
           'Are you sure you want to delete "${shop.name}"? This action cannot be undone.',
-          style: const TextStyle(fontSize: 13, color: _inkMid, height: 1.5),
+          style: const TextStyle(
+              fontSize: 13, color: _T.inkMid, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: _inkMid)),
+            child:
+                const Text('Cancel', style: TextStyle(color: _T.inkMid)),
           ),
           FilledButton(
             onPressed: () {
@@ -197,7 +239,7 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
               Navigator.of(context).pop();
             },
             style: FilledButton.styleFrom(
-              backgroundColor: _coral,
+              backgroundColor: _T.danger,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
@@ -213,10 +255,10 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: _void,
+        systemNavigationBarColor: _T.bg,
       ),
       child: Scaffold(
-        backgroundColor: _void,
+        backgroundColor: _T.bg,
         body: BlocConsumer<ShopBloc, ShopState>(
           listener: (context, state) {
             final msg = state is ShopCreated
@@ -239,8 +281,8 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
               slivers: [
                 // ── App Bar ──────────────────────────────────────────────
                 SliverAppBar(
-                  backgroundColor: _surface,
-                  foregroundColor: _ink,
+                  backgroundColor: _T.white,
+                  foregroundColor: _T.ink,
                   elevation: 0,
                   pinned: true,
                   floating: false,
@@ -265,31 +307,25 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Shops',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: _ink,
-                                  letterSpacing: -0.3,
-                                ),
+                                style: _T.ts(20,
+                                    weight: FontWeight.w800,
+                                    color: _T.ink,
+                                    letterSpacing: -0.3),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'Manage your store network',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: _inkDim,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                                style: _T.ts(11, color: _T.inkMid),
                               ),
                             ],
                           ),
                     background: Container(
                       decoration: const BoxDecoration(
-                        color: _surface,
+                        color: Colors.white,
                         border: Border(
-                          bottom: BorderSide(color: _border),
+                          bottom: BorderSide(color: _T.border),
                         ),
                       ),
                     ),
@@ -298,7 +334,8 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
                     if (!_isSearchVisible) ...[
                       _AppBarIconButton(
                         icon: Icons.search_rounded,
-                        onTap: () => setState(() => _isSearchVisible = true),
+                        onTap: () =>
+                            setState(() => _isSearchVisible = true),
                       ),
                       const SizedBox(width: 4),
                       Padding(
@@ -310,21 +347,21 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14),
                             decoration: BoxDecoration(
-                              color: _gold,
+                              color: _T.primary,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.add_rounded,
-                                    size: 16, color: _void),
+                                    size: 16, color: Colors.white),
                                 SizedBox(width: 5),
                                 Text(
                                   'Add',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: _void,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ],
@@ -361,12 +398,12 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
                     ),
                   )
                 else if (state is ShopLoaded) ...[
-                  // Stats
                   SliverToBoxAdapter(
                     child: FadeTransition(
                       opacity: _fadeAnim,
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                        padding:
+                            const EdgeInsets.fromLTRB(16, 20, 16, 0),
                         child: _StatsRow(
                           shops: state.shops,
                           controller: _animController,
@@ -374,42 +411,36 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                  // Section header
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                      padding:
+                          const EdgeInsets.fromLTRB(20, 24, 20, 12),
                       child: Row(
                         children: [
-                          const Text(
+                          Text(
                             'Store List',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: _ink,
-                            ),
+                            style: _T.ts(15,
+                                weight: FontWeight.w700, color: _T.ink),
                           ),
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: _indigoSoft,
+                              color: _T.accentSoft,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               _filterShops(state.shops).length.toString(),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: _indigo,
-                              ),
+                              style: _T.ts(11,
+                                  weight: FontWeight.w600,
+                                  color: _T.primary),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  // Shop list
                   () {
                     final filtered = _filterShops(state.shops);
                     if (filtered.isEmpty) {
@@ -445,19 +476,23 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
                                   16,
                                   0,
                                   16,
-                                  index == filtered.length - 1 ? 100 : 10,
+                                  index == filtered.length - 1
+                                      ? 100
+                                      : 10,
                                 ),
                                 child: _ShopCard(
                                   shop: shop,
                                   onView: () => _showShopDetails(shop),
-                                  onEdit: () => _showEditShopDialog(shop),
-                                  onDelete: () => _showDeleteConfirm(shop),
+                                  onEdit: () =>
+                                      _showEditShopDialog(shop),
+                                  onDelete: () =>
+                                      _showDeleteConfirm(shop),
                                 ),
                               ),
                             ),
                           );
                         },
-                        childCount: _filterShops(state.shops).length,
+                        childCount: filtered.length,
                       ),
                     );
                   }(),
@@ -469,11 +504,11 @@ class _ShopsPageState extends State<ShopsPage> with TickerProviderStateMixin {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddShopDialog,
-          backgroundColor: _gold,
-          foregroundColor: _void,
+          backgroundColor: _T.primary,
+          foregroundColor: Colors.white,
           elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
           child: const Icon(Icons.add_rounded, size: 22),
         ),
       ),
@@ -506,32 +541,28 @@ class _SearchBar extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
               autofocus: true,
-              style: const TextStyle(
-                  fontSize: 14, color: _ShopsPageState._ink),
+              style: _T.ts(14, color: _T.ink),
               decoration: InputDecoration(
                 hintText: 'Search shops...',
-                hintStyle:
-                    const TextStyle(color: _ShopsPageState._inkDim),
+                hintStyle: _T.ts(13, color: _T.inkDim),
                 prefixIcon: const Icon(Icons.search_rounded,
-                    size: 16, color: _ShopsPageState._inkDim),
+                    size: 16, color: _T.inkDim),
                 filled: true,
-                fillColor: _ShopsPageState._panel,
+                fillColor: _T.bg,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide:
-                      const BorderSide(color: _ShopsPageState._border),
+                  borderSide: const BorderSide(color: _T.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide:
-                      const BorderSide(color: _ShopsPageState._border),
+                  borderSide: const BorderSide(color: _T.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                      color: _ShopsPageState._gold, width: 1.5),
+                  borderSide:
+                      const BorderSide(color: _T.primary, width: 1.5),
                 ),
               ),
             ),
@@ -544,13 +575,12 @@ class _SearchBar extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: _ShopsPageState._panel,
+              color: _T.bg,
               borderRadius: BorderRadius.circular(8),
-              border:
-                  Border.all(color: _ShopsPageState._border),
+              border: Border.all(color: _T.border),
             ),
             child: const Icon(Icons.close_rounded,
-                size: 14, color: _ShopsPageState._inkMid),
+                size: 14, color: _T.inkMid),
           ),
         ),
       ],
@@ -575,18 +605,18 @@ class _AppBarIconButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: _ShopsPageState._panel,
+          color: _T.bg,
           borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: _ShopsPageState._border),
+          border: Border.all(color: _T.border),
         ),
-        child: Icon(icon, size: 16, color: _ShopsPageState._inkMid),
+        child: Icon(icon, size: 16, color: _T.inkMid),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab Bar Delegate (pinned)
+// Tab Bar Delegate
 // ─────────────────────────────────────────────────────────────────────────────
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   final String selectedTab;
@@ -610,16 +640,16 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: _ShopsPageState._void,
+      color: _T.bg,
       child: Column(
         children: [
           Expanded(
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: ['All', 'Active', 'Inactive', 'Pending']
-                  .map((tab) {
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
+              children:
+                  ['All', 'Active', 'Inactive', 'Pending'].map((tab) {
                 final isSelected = selectedTab == tab;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -630,25 +660,22 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? _ShopsPageState._gold
-                            : _ShopsPageState._panel,
+                        color:
+                            isSelected ? _T.primary : _T.bg,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isSelected
-                              ? _ShopsPageState._gold
-                              : _ShopsPageState._border,
+                              ? _T.primary
+                              : _T.border,
                         ),
                       ),
                       child: Text(
                         tab,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? _ShopsPageState._void
-                              : _ShopsPageState._inkMid,
-                        ),
+                        style: _T.ts(13,
+                            weight: FontWeight.w600,
+                            color: isSelected
+                                ? _T.bg
+                                : _T.inkMid),
                       ),
                     ),
                   ),
@@ -656,7 +683,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
               }).toList(),
             ),
           ),
-          Container(height: 1, color: _ShopsPageState._border),
+          Container(height: 1, color: _T.border),
         ],
       ),
     );
@@ -676,25 +703,29 @@ class _StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = [
       _StatData('Total', shops.length, Icons.store_rounded,
-          _ShopsPageState._indigo, _ShopsPageState._indigoSoft),
+          _T.primary, _T.primarySoft),
       _StatData(
           'Active',
           shops.where((s) => s.status.toLowerCase() == 'active').length,
           Icons.check_circle_rounded,
-          _ShopsPageState._teal,
-          _ShopsPageState._tealSoft),
+          _T.accent,
+          _T.accentSoft),
       _StatData(
           'Inactive',
-          shops.where((s) => s.status.toLowerCase() == 'inactive').length,
+          shops
+              .where((s) => s.status.toLowerCase() == 'inactive')
+              .length,
           Icons.pause_circle_rounded,
-          _ShopsPageState._amber,
-          _ShopsPageState._amberSoft),
+          _T.warn,
+          _T.warnSoft),
       _StatData(
           'Pending',
-          shops.where((s) => s.status.toLowerCase() == 'pending').length,
+          shops
+              .where((s) => s.status.toLowerCase() == 'pending')
+              .length,
           Icons.hourglass_empty_rounded,
-          _ShopsPageState._coral,
-          _ShopsPageState._coralSoft),
+          _T.danger,
+          _T.dangerSoft),
     ];
 
     return SizedBox(
@@ -709,11 +740,8 @@ class _StatsRow extends StatelessWidget {
             builder: (_, __) {
               final anim = CurvedAnimation(
                 parent: controller,
-                curve: Interval(
-                  i * 0.1,
-                  1.0,
-                  curve: Curves.easeOutCubic,
-                ),
+                curve: Interval(i * 0.1, 1.0,
+                    curve: Curves.easeOutCubic),
               );
               return Opacity(
                 opacity: anim.value.clamp(0.0, 1.0),
@@ -751,9 +779,10 @@ class _MiniStatCard extends StatelessWidget {
       width: 100,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _ShopsPageState._card,
+        color: _T.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _ShopsPageState._border),
+        border: Border.all(color: _T.border),
+        boxShadow: _T.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -773,20 +802,15 @@ class _MiniStatCard extends StatelessWidget {
             children: [
               Text(
                 data.value.toString(),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: _ShopsPageState._ink,
-                  height: 1.1,
-                ),
+                style: _T.ts(20,
+                    weight: FontWeight.w800,
+                    color: _T.ink,
+                    height: 1.1),
               ),
               Text(
                 data.label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: _ShopsPageState._inkDim,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: _T.ts(10,
+                    weight: FontWeight.w500, color: _T.inkDim),
               ),
             ],
           ),
@@ -797,7 +821,7 @@ class _MiniStatCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shop Card (mobile list item)
+// Shop Card
 // ─────────────────────────────────────────────────────────────────────────────
 class _ShopCard extends StatelessWidget {
   final ShopEntity shop;
@@ -819,14 +843,15 @@ class _ShopCard extends StatelessWidget {
       child: InkWell(
         onTap: onView,
         borderRadius: BorderRadius.circular(16),
-        splashColor: _ShopsPageState._gold.withOpacity(0.05),
-        highlightColor: _ShopsPageState._gold.withOpacity(0.03),
+        splashColor: _T.primaryOpacity(0.05),
+        highlightColor: _T.primaryOpacity(0.03),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _ShopsPageState._card,
+            color: _T.card,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _ShopsPageState._border),
+            border: Border.all(color: _T.border),
+            boxShadow: _T.cardShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -838,14 +863,13 @@ class _ShopCard extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: _ShopsPageState._indigoSoft,
+                      color: _T.primarySoft,
                       borderRadius: BorderRadius.circular(11),
                       border: Border.all(
-                          color: _ShopsPageState._indigo
-                              .withOpacity(0.15)),
+                          color: _T.primaryOpacity(0.15)),
                     ),
                     child: const Icon(Icons.store_rounded,
-                        size: 18, color: _ShopsPageState._indigo),
+                        size: 18, color: _T.primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -854,19 +878,13 @@ class _ShopCard extends StatelessWidget {
                       children: [
                         Text(
                           shop.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: _ShopsPageState._ink,
-                          ),
+                          style: _T.ts(14,
+                              weight: FontWeight.w700, color: _T.ink),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           '#${shop.id}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: _ShopsPageState._inkDim,
-                          ),
+                          style: _T.ts(10, color: _T.inkDim),
                         ),
                       ],
                     ),
@@ -875,9 +893,8 @@ class _ShopCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Container(height: 1, color: _ShopsPageState._border),
+              Container(height: 1, color: _T.border),
               const SizedBox(height: 12),
-              // Info rows
               _InfoRow(Icons.location_on_outlined, shop.address),
               const SizedBox(height: 6),
               _InfoRow(Icons.phone_outlined, shop.phone),
@@ -895,8 +912,8 @@ class _ShopCard extends StatelessWidget {
                     child: _CardButton(
                       label: 'View',
                       icon: Icons.visibility_outlined,
-                      color: _ShopsPageState._indigo,
-                      bgColor: _ShopsPageState._indigoSoft,
+                      color: _T.primary,
+                      bgColor: _T.primarySoft,
                       onTap: onView,
                     ),
                   ),
@@ -905,8 +922,8 @@ class _ShopCard extends StatelessWidget {
                     child: _CardButton(
                       label: 'Edit',
                       icon: Icons.edit_outlined,
-                      color: _ShopsPageState._teal,
-                      bgColor: _ShopsPageState._tealSoft,
+                      color: _T.accent,
+                      bgColor: _T.accentSoft,
                       onTap: onEdit,
                     ),
                   ),
@@ -915,8 +932,8 @@ class _ShopCard extends StatelessWidget {
                     child: _CardButton(
                       label: 'Delete',
                       icon: Icons.delete_outline_rounded,
-                      color: _ShopsPageState._coral,
-                      bgColor: _ShopsPageState._coralSoft,
+                      color: _T.danger,          // ✅ FIXED: was bare `danger`
+                      bgColor: _T.dangerSoft,
                       onTap: onDelete,
                     ),
                   ),
@@ -939,13 +956,12 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 13, color: _ShopsPageState._inkDim),
+        Icon(icon, size: 13, color: _T.inkDim),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-                fontSize: 12, color: _ShopsPageState._inkMid),
+            style: _T.ts(12, color: _T.inkMid),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -987,11 +1003,7 @@ class _CardButton extends StatelessWidget {
             const SizedBox(width: 5),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
+              style: _T.ts(12, weight: FontWeight.w600, color: color),
             ),
           ],
         ),
@@ -1009,24 +1021,25 @@ class _StatusBadge extends StatelessWidget {
     Color color, bgColor;
     switch (status.toLowerCase()) {
       case 'active':
-        color = _ShopsPageState._teal;
-        bgColor = _ShopsPageState._tealSoft;
+        color = _T.accent;
+        bgColor = _T.accentSoft;
         break;
       case 'inactive':
-        color = _ShopsPageState._amber;
-        bgColor = _ShopsPageState._amberSoft;
+        color = _T.warn;
+        bgColor = _T.warnSoft;
         break;
       case 'pending':
-        color = _ShopsPageState._coral;
-        bgColor = _ShopsPageState._coralSoft;
+        color = _T.danger;
+        bgColor = _T.dangerSoft;
         break;
       default:
-        color = _ShopsPageState._inkMid;
-        bgColor = _ShopsPageState._inkDim.withOpacity(0.1);
+        color = _T.inkMid;
+        bgColor = _T.inkMid.withOpacity(0.1);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
@@ -1044,11 +1057,8 @@ class _StatusBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             status[0].toUpperCase() + status.substring(1),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+            style:
+                _T.ts(11, weight: FontWeight.w600, color: color),
           ),
         ],
       ),
@@ -1066,7 +1076,7 @@ class _LoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: CircularProgressIndicator(
-        color: _ShopsPageState._gold,
+        color: _T.primary,
         strokeWidth: 2,
       ),
     );
@@ -1089,17 +1099,16 @@ class _ErrorState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                color: _ShopsPageState._coralSoft,
+                color: _T.dangerSoft,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.error_outline_rounded,
-                  size: 36, color: _ShopsPageState._coral),
+                  size: 36, color: _T.danger),
             ),
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(
-                  fontSize: 13, color: _ShopsPageState._inkMid),
+              style: _T.ts(13, color: _T.inkMid),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -1108,8 +1117,8 @@ class _ErrorState extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Retry'),
               style: FilledButton.styleFrom(
-                backgroundColor: _ShopsPageState._card,
-                foregroundColor: _ShopsPageState._ink,
+                backgroundColor: _T.card,
+                foregroundColor: _T.ink,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -1135,12 +1144,11 @@ class _EmptyState extends StatelessWidget {
           children: [
             Icon(Icons.store_outlined,
                 size: 52,
-                color: _ShopsPageState._inkDim.withOpacity(0.4)),
+                color: _T.inkDim.withOpacity(0.4)),
             const SizedBox(height: 12),
             Text(
               message,
-              style: const TextStyle(
-                  fontSize: 13, color: _ShopsPageState._inkDim),
+              style: _T.ts(13, color: _T.inkDim),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1161,25 +1169,27 @@ class _ShopDetailsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: _ShopsPageState._card,
+        color: _T.card,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle
           Container(
             margin: const EdgeInsets.only(top: 12),
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: _ShopsPageState._inkDim,
+              color: _T.inkLight,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           Padding(
             padding: EdgeInsets.fromLTRB(
-                24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+                24,
+                20,
+                24,
+                MediaQuery.of(context).viewInsets.bottom + 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1188,11 +1198,11 @@ class _ShopDetailsSheet extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: _ShopsPageState._indigoSoft,
+                        color: _T.primarySoft,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.store_rounded,
-                          color: _ShopsPageState._indigo, size: 18),
+                          color: _T.primary, size: 18),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1201,17 +1211,12 @@ class _ShopDetailsSheet extends StatelessWidget {
                         children: [
                           Text(
                             shop.name,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: _ShopsPageState._ink,
-                            ),
+                            style: _T.ts(17,
+                                weight: FontWeight.w800, color: _T.ink),
                           ),
                           Text(
                             'ID: ${shop.id}',
-                            style: const TextStyle(
-                                fontSize: 11,
-                                color: _ShopsPageState._inkDim),
+                            style: _T.ts(11, color: _T.inkDim),
                           ),
                         ],
                       ),
@@ -1223,14 +1228,14 @@ class _ShopDetailsSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _ShopsPageState._panel,
+                    color: _T.bg,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _ShopsPageState._border),
+                    border: Border.all(color: _T.border),
                   ),
                   child: Column(
                     children: [
-                      _DetailRow(
-                          Icons.location_on_outlined, 'Address', shop.address),
+                      _DetailRow(Icons.location_on_outlined, 'Address',
+                          shop.address),
                       const _Divider(),
                       _DetailRow(
                           Icons.phone_outlined, 'Phone', shop.phone),
@@ -1251,8 +1256,8 @@ class _ShopDetailsSheet extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: FilledButton.styleFrom(
-                      backgroundColor: _ShopsPageState._panel,
-                      foregroundColor: _ShopsPageState._inkMid,
+                      backgroundColor: _T.bg,
+                      foregroundColor: _T.inkMid,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1283,22 +1288,18 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: _ShopsPageState._inkDim),
+          Icon(icon, size: 14, color: _T.inkDim),
           const SizedBox(width: 10),
           SizedBox(
             width: 68,
             child: Text(label,
-                style: const TextStyle(
-                    fontSize: 11, color: _ShopsPageState._inkDim)),
+                style: _T.ts(11, color: _T.inkDim)),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: _ShopsPageState._ink,
-              ),
+              style: _T.ts(13,
+                  weight: FontWeight.w500, color: _T.ink),
             ),
           ),
         ],
@@ -1312,14 +1313,18 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(height: 1, color: _ShopsPageState._border);
+    return Container(height: 1, color: _T.border);
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shop Form Sheet
+// ─────────────────────────────────────────────────────────────────────────────
 class _ShopFormSheet extends StatefulWidget {
   final ShopEntity? shop;
-  final Function(String name, String address, String phone, String email, String currency, String ownerName, String ownerEmail, String ownerPassword)
-      onSave;
+  final Function(String name, String address, String phone, String email,
+      String currency, String ownerName, String ownerEmail,
+      String ownerPassword) onSave;
 
   const _ShopFormSheet({this.shop, required this.onSave});
 
@@ -1371,7 +1376,7 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: _ShopsPageState._card,
+        color: _T.card,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
@@ -1382,32 +1387,30 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
               Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 20),
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _ShopsPageState._inkDim,
+                    color: _T.inkLight,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              // Title
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _ShopsPageState._goldSoft,
+                      color: _T.primarySoft,
                       borderRadius: BorderRadius.circular(11),
                     ),
                     child: Icon(
                       isEdit
                           ? Icons.edit_rounded
                           : Icons.add_business_rounded,
-                      color: _ShopsPageState._gold,
+                      color: _T.primary,
                       size: 18,
                     ),
                   ),
@@ -1417,18 +1420,12 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                     children: [
                       Text(
                         isEdit ? 'Edit Shop' : 'New Shop',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: _ShopsPageState._ink,
-                        ),
+                        style: _T.ts(17,
+                            weight: FontWeight.w800, color: _T.ink),
                       ),
-                      const Text(
+                      Text(
                         'Fill in the details below',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _ShopsPageState._inkDim,
-                        ),
+                        style: _T.ts(11, color: _T.inkDim),
                       ),
                     ],
                   ),
@@ -1479,27 +1476,24 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 validator: (v) =>
                     (v?.isEmpty ?? true) ? 'Required' : null,
               ),
-              // Owner Account Section
               if (!isEdit) ...[
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _ShopsPageState._panel,
+                    color: _T.bg,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _ShopsPageState._border),
+                    border: Border.all(color: _T.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'OWNER ACCOUNT',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: _ShopsPageState._inkDim,
-                          letterSpacing: 0.08,
-                        ),
+                        style: _T.ts(10,
+                            weight: FontWeight.w700,
+                            color: _T.inkDim,
+                            letterSpacing: 0.08),
                       ),
                       const SizedBox(height: 16),
                       _FormInput(
@@ -1517,7 +1511,8 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
                           if (v?.isEmpty ?? true) return 'Required';
-                          if (!v!.contains('@')) return 'Enter a valid email';
+                          if (!v!.contains('@'))
+                            return 'Enter a valid email';
                           return null;
                         },
                       ),
@@ -1534,15 +1529,15 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                         },
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isPasswordVisible 
-                                ? Icons.visibility_off_rounded 
+                            _isPasswordVisible
+                                ? Icons.visibility_off_rounded
                                 : Icons.visibility_rounded,
                             size: 16,
-                            color: _ShopsPageState._inkDim,
+                            color: _T.inkDim,
                           ),
-                          onPressed: () {
-                            setState(() => _isPasswordVisible = !_isPasswordVisible);
-                          },
+                          onPressed: () => setState(
+                              () => _isPasswordVisible =
+                                  !_isPasswordVisible),
                         ),
                       ),
                     ],
@@ -1558,14 +1553,13 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                       style: OutlinedButton.styleFrom(
                         padding:
                             const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(
-                            color: _ShopsPageState._border),
+                        side: const BorderSide(color: _T.border),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Cancel',
-                          style: TextStyle(
-                              color: _ShopsPageState._inkMid)),
+                      child: Text('Cancel',
+                          style:
+                              _T.ts(14, color: _T.inkMid)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1591,10 +1585,11 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                               ? Icons.save_rounded
                               : Icons.add_rounded,
                           size: 15),
-                      label: Text(isEdit ? 'Save Changes' : 'Add Shop'),
+                      label:
+                          Text(isEdit ? 'Save Changes' : 'Add Shop'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: _ShopsPageState._gold,
-                        foregroundColor: _ShopsPageState._void,
+                        backgroundColor: _T.primary,
+                        foregroundColor: _T.bg,
                         padding:
                             const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -1643,12 +1638,10 @@ class _FormInput extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: _ShopsPageState._inkDim,
-            letterSpacing: 0.08,
-          ),
+          style: _T.ts(10,
+              weight: FontWeight.w700,
+              color: _T.inkDim,
+              letterSpacing: 0.08),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -1656,43 +1649,39 @@ class _FormInput extends StatelessWidget {
           keyboardType: keyboardType,
           obscureText: obscureText ?? false,
           validator: validator,
-          style: const TextStyle(
-              fontSize: 14, color: _ShopsPageState._ink),
+          style: _T.ts(14, color: _T.ink),
           decoration: InputDecoration(
             prefixIcon:
-                Icon(icon, size: 15, color: _ShopsPageState._inkDim),
+                Icon(icon, size: 15, color: _T.inkDim),
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: _ShopsPageState._panel,
+            fillColor: _T.bg,
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide:
-                  const BorderSide(color: _ShopsPageState._border),
+              borderSide: const BorderSide(color: _T.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide:
-                  const BorderSide(color: _ShopsPageState._border),
+              borderSide: const BorderSide(color: _T.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(
-                  color: _ShopsPageState._gold, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _T.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(
-                  color: _ShopsPageState._coral, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _T.danger, width: 1.5),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(
-                  color: _ShopsPageState._coral, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _T.danger, width: 1.5),
             ),
-            errorStyle: const TextStyle(
-                fontSize: 11, color: _ShopsPageState._coral),
+            errorStyle: _T.ts(11, color: _T.danger),
           ),
         ),
       ],

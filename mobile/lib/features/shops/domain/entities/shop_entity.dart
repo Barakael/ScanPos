@@ -6,6 +6,7 @@ class ShopEntity extends Equatable {
   final String address;
   final String phone;
   final String email;
+  final double taxRate;
   final String currency;
   final String status;
   final String? manager;
@@ -22,6 +23,7 @@ class ShopEntity extends Equatable {
     this.address = '',
     this.phone = '',
     this.email = '',
+    this.taxRate = 0.0,
     this.currency = 'TZS',
     this.status = 'active',
     this.manager,
@@ -40,6 +42,7 @@ class ShopEntity extends Equatable {
         address,
         phone,
         email,
+        taxRate,
         currency,
         status,
         manager,

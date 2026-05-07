@@ -6,6 +6,65 @@ import '../bloc/staff_event.dart';
 import '../bloc/staff_state.dart';
 import '../../domain/entities/staff_entity.dart';
 
+// ════════════════════════════════════════════════════════════════════════════
+// DESIGN TOKENS — matches Reports page _T exactly
+// ════════════════════════════════════════════════════════════════════════════
+class _T {
+  static const bg         = Color(0xFFF5F6FA);
+  static const white      = Color(0xFFFFFFFF);
+  static const card       = Color(0xFFFFFFFF);
+  static const primary    = Color(0xFF1E3A5F);
+  static const primaryLt  = Color(0xFF2B527A);
+  static const accent     = Color(0xFF00C896);
+  static const accentSoft = Color(0x1A00C896);
+  static const danger     = Color(0xFFFF4D4D);
+  static const dangerSoft = Color(0x1AFF4D4D);
+  static const warn       = Color(0xFFFFA726);
+  static const warnSoft   = Color(0x1AFFA726);
+  static const ink        = Color(0xFF1A2332);
+  static const inkMid     = Color(0xFF64748B);
+  static const inkLight   = Color(0xFFCBD5E1);
+  static const border     = Color(0xFFE8EDF5);
+
+  static TextStyle ts(
+    double size, {
+    FontWeight weight = FontWeight.w400,
+    Color color = ink,
+    double? height,
+    double? letterSpacing,
+  }) =>
+      TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        color: color,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: primary.withOpacity(0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static List<BoxShadow> get floatShadow => [
+        BoxShadow(
+          color: primary.withOpacity(0.14),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
+        ),
+      ];
+
+  static Color primaryOpacity(double o) => primary.withOpacity(o);
+  static Color whiteOpacity(double o)   => white.withOpacity(o);
+  static Color accentOpacity(double o)  => accent.withOpacity(o);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STAFF PAGE
+// ════════════════════════════════════════════════════════════════════════════
 class StaffPage extends StatefulWidget {
   const StaffPage({super.key});
 
@@ -16,29 +75,11 @@ class StaffPage extends StatefulWidget {
 class _StaffPageState extends State<StaffPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
-  bool _isSearchVisible = false;
+  late Animation<double>   _fadeAnim;
 
-  // ── Palette ──────────────────────────────────────────────────────────────
-  static const _void       = Color(0xFF09090F);
-  static const _surface    = Color(0xFF111118);
-  static const _panel      = Color(0xFF16161F);
-  static const _card       = Color(0xFF1C1C28);
-  static const _border     = Color(0x18FFFFFF);
-  static const _ink        = Color(0xFFF0F0FF);
-  static const _inkMid     = Color(0xFF8B8BA8);
-  static const _inkDim     = Color(0xFF4A4A62);
-  static const _gold       = Color(0xFFF5C842);
-  static const _goldSoft   = Color(0x20F5C842);
-  static const _teal       = Color(0xFF00D9A3);
-  static const _tealSoft   = Color(0x1A00D9A3);
-  static const _coral      = Color(0xFFFF5F6D);
-  static const _coralSoft  = Color(0x1AFF5F6D);
-  static const _indigo     = Color(0xFF7B68EE);
-  static const _indigoSoft = Color(0x1F7B68EE);
-  static const _amber      = Color(0xFFFF9F43);
+  String _searchQuery      = '';
+  final _searchController  = TextEditingController();
+  bool   _isSearchVisible  = false;
 
   @override
   void initState() {
@@ -51,8 +92,13 @@ class _StaffPageState extends State<StaffPage>
       parent: _animController,
       curve: Curves.easeOutCubic,
     );
-    context.read<StaffBloc>().add(const StaffRequested());
-    _animController.forward();
+    // Fetch staff safely — guarded against unmounted calls via BlocListener
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<StaffBloc>().add(const StaffRequested());
+        _animController.forward();
+      }
+    });
   }
 
   @override
@@ -62,7 +108,9 @@ class _StaffPageState extends State<StaffPage>
     super.dispose();
   }
 
+  // ── Toast ─────────────────────────────────────────────────────────────────
   void _showToast(String message, {bool error = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -77,20 +125,25 @@ class _StaffPageState extends State<StaffPage>
             ),
             const SizedBox(width: 8),
             Expanded(
-                child: Text(message, style: const TextStyle(fontSize: 13))),
+              child: Text(message,
+                  style: _T.ts(13,
+                      weight: FontWeight.w500, color: Colors.white)),
+            ),
           ],
         ),
-        backgroundColor: error ? _coral : _teal,
+        backgroundColor: error ? _T.danger : _T.accent,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
+  // ── Sheets / dialogs ──────────────────────────────────────────────────────
   void _showAddStaffSheet() {
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -98,8 +151,8 @@ class _StaffPageState extends State<StaffPage>
       builder: (_) => _StaffFormSheet(
         onSave: (name, email, password, branchId) {
           context.read<StaffBloc>().add(StaffCreateRequested(
-                name: name,
-                email: email,
+                name:     name,
+                email:    email,
                 password: password,
                 branchId: branchId,
               ));
@@ -110,6 +163,7 @@ class _StaffPageState extends State<StaffPage>
   }
 
   void _showEditStaffSheet(StaffEntity staff) {
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -118,9 +172,9 @@ class _StaffPageState extends State<StaffPage>
         staff: staff,
         onSave: (name, email, password, branchId) {
           context.read<StaffBloc>().add(StaffUpdateRequested(
-                id: staff.id,
-                name: name,
-                email: email,
+                id:       staff.id,
+                name:     name,
+                email:    email,
                 password: password,
                 branchId: branchId,
               ));
@@ -131,27 +185,25 @@ class _StaffPageState extends State<StaffPage>
   }
 
   void _showDeleteConfirm(StaffEntity staff) {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: _card,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Remove Staff Member',
-          style: TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w700, color: _ink),
-        ),
+        backgroundColor: _T.card,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: Text('Remove Staff Member',
+            style: _T.ts(16, weight: FontWeight.w700)),
         content: Text(
-          'Are you sure you want to remove ${staff.firstName} ${staff.lastName}? This action cannot be undone.',
-          style: const TextStyle(
-              fontSize: 13, color: _inkMid, height: 1.5),
+          'Are you sure you want to remove '
+          '${staff.firstName} ${staff.lastName}? '
+          'This action cannot be undone.',
+          style: _T.ts(13, color: _T.inkMid, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel',
-                style: TextStyle(color: _inkMid)),
+            child: Text('Cancel', style: _T.ts(14, color: _T.inkMid)),
           ),
           FilledButton(
             onPressed: () {
@@ -161,7 +213,7 @@ class _StaffPageState extends State<StaffPage>
               Navigator.of(context).pop();
             },
             style: FilledButton.styleFrom(
-              backgroundColor: _coral,
+              backgroundColor: _T.danger,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
@@ -172,32 +224,42 @@ class _StaffPageState extends State<StaffPage>
     );
   }
 
+  // ── Filter helper ─────────────────────────────────────────────────────────
   List<StaffEntity> _filterStaff(List<StaffEntity> staff) {
     if (_searchQuery.isEmpty) return staff;
+    final q = _searchQuery.toLowerCase();
     return staff.where((s) {
-      final q = _searchQuery.toLowerCase();
-      return '${s.firstName} ${s.lastName}'.toLowerCase().contains(q) ||
-          s.email.toLowerCase().contains(q) ||
-          (s.phone.toLowerCase().contains(q));
+      final fullName = '${s.firstName} ${s.lastName}'.toLowerCase();
+      final email    = (s.email).toLowerCase();
+      // Guard against null phone — use '' fallback
+      final phone    = (s.phone ?? '').toLowerCase();
+      return fullName.contains(q) ||
+          email.contains(q) ||
+          phone.contains(q);
     }).toList();
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // BUILD
+  // ══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: _void,
+        systemNavigationBarColor: _T.bg,
       ),
       child: Scaffold(
-        backgroundColor: _void,
+        backgroundColor: _T.bg,
         body: BlocConsumer<StaffBloc, StaffState>(
           listener: (context, state) {
+            if (!mounted) return;
             if (state is StaffCreated) {
               _showToast('Staff member added');
               context.read<StaffBloc>().add(const StaffRequested());
-              _animController.reset();
-              _animController.forward();
+              _animController
+                ..reset()
+                ..forward();
             } else if (state is StaffUpdated) {
               _showToast('Staff member updated');
               context.read<StaffBloc>().add(const StaffRequested());
@@ -212,10 +274,10 @@ class _StaffPageState extends State<StaffPage>
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // ── App Bar ───────────────────────────────────────────
+                // ── App Bar ────────────────────────────────────────────
                 SliverAppBar(
-                  backgroundColor: _surface,
-                  foregroundColor: _ink,
+                  backgroundColor: _T.primary,
+                  foregroundColor: Colors.white,
                   elevation: 0,
                   pinned: true,
                   expandedHeight: 110,
@@ -235,42 +297,35 @@ class _StaffPageState extends State<StaffPage>
                               _searchController.clear();
                             }),
                           )
-                        : const Column(
+                        : Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Staff',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: _ink,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'Manage your team',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: _inkDim,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
+                              Text('Staff',
+                                  style: _T.ts(20,
+                                      weight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.3)),
+                              const SizedBox(height: 2),
+                              Text('Manage your team',
+                                  style:
+                                      _T.ts(11, color: Colors.white60)),
                             ],
                           ),
                     background: Container(
-                      decoration: const BoxDecoration(
-                        color: _surface,
-                        border: Border(
-                            bottom: BorderSide(color: _border)),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_T.primary, _T.primaryLt],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
                     ),
                   ),
                   actions: [
                     if (!_isSearchVisible) ...[
                       _IconBtn(
-                        icon: Icons.search_rounded,
+                        icon:  Icons.search_rounded,
                         onTap: () =>
                             setState(() => _isSearchVisible = true),
                       ),
@@ -284,23 +339,19 @@ class _StaffPageState extends State<StaffPage>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14),
                             decoration: BoxDecoration(
-                              color: _gold,
+                              color: _T.accent,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.add_rounded,
-                                    size: 16, color: _void),
-                                SizedBox(width: 5),
-                                Text(
-                                  'Add Cashier',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: _void,
-                                  ),
-                                ),
+                                const Icon(Icons.add_rounded,
+                                    size: 16, color: Colors.white),
+                                const SizedBox(width: 5),
+                                Text('Add Cashier',
+                                    style: _T.ts(13,
+                                        weight: FontWeight.w700,
+                                        color: Colors.white)),
                               ],
                             ),
                           ),
@@ -310,27 +361,35 @@ class _StaffPageState extends State<StaffPage>
                   ],
                 ),
 
-                // ── Content ───────────────────────────────────────────
+                // ── Loading ────────────────────────────────────────────
                 if (state is StaffLoading)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     child: Center(
-                      child: CircularProgressIndicator(
-                          color: _gold, strokeWidth: 2),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                              color: _T.primary, strokeWidth: 2),
+                          const SizedBox(height: 14),
+                          Text('Loading staff…',
+                              style: _T.ts(13, color: _T.inkMid)),
+                        ],
+                      ),
                     ),
                   )
+
+                // ── Error ──────────────────────────────────────────────
                 else if (state is StaffError)
                   SliverFillRemaining(
-                    child: _EmptyStaffState(
-                      message: state.message.toLowerCase().contains('no staff') || 
-                               state.message.toLowerCase().contains('not found') ||
-                               state.message.toLowerCase().contains('empty')
-                          ? 'No staff members found'
-                          : 'Unable to load staff',
+                    child: _ErrorState(
+                      message: state.message,
                       onRetry: () => context
                           .read<StaffBloc>()
                           .add(const StaffRequested()),
                     ),
                   )
+
+                // ── Loaded ─────────────────────────────────────────────
                 else if (state is StaffLoaded) ...[
                   // Stats bar
                   SliverToBoxAdapter(
@@ -343,44 +402,42 @@ class _StaffPageState extends State<StaffPage>
                       ),
                     ),
                   ),
-                  // List header
+
+                  // Section header
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                       child: Row(
                         children: [
-                          const Text(
-                            'Team Members',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: _ink,
-                            ),
-                          ),
+                          Text('Team Members',
+                              style: _T.ts(15,
+                                  weight: FontWeight.w700)),
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                                horizontal: 9, vertical: 3),
                             decoration: BoxDecoration(
-                              color: _indigoSoft,
+                              color: _T.primaryOpacity(0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              _filterStaff(state.staff).length.toString(),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: _indigo,
-                              ),
+                              _filterStaff(state.staff)
+                                  .length
+                                  .toString(),
+                              style: _T.ts(11,
+                                  weight: FontWeight.w600,
+                                  color: _T.primary),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+
                   // Staff list
-                  () {
+                  Builder(builder: (context) {
                     final filtered = _filterStaff(state.staff);
+
                     if (filtered.isEmpty) {
                       return SliverFillRemaining(
                         hasScrollBody: false,
@@ -392,10 +449,16 @@ class _StaffPageState extends State<StaffPage>
                         ),
                       );
                     }
+
                     return SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
+                          if (index >= filtered.length) {
+                            return const SizedBox.shrink();
+                          }
                           final staff = filtered[index];
+                          final isLast = index == filtered.length - 1;
+
                           return FadeTransition(
                             opacity: _fadeAnim,
                             child: SlideTransition(
@@ -415,11 +478,11 @@ class _StaffPageState extends State<StaffPage>
                                   16,
                                   0,
                                   16,
-                                  index == filtered.length - 1 ? 100 : 10,
+                                  isLast ? 100 : 10,
                                 ),
                                 child: _StaffCard(
-                                  staff: staff,
-                                  onEdit: () =>
+                                  staff:    staff,
+                                  onEdit:   () =>
                                       _showEditStaffSheet(staff),
                                   onDelete: () =>
                                       _showDeleteConfirm(staff),
@@ -428,11 +491,14 @@ class _StaffPageState extends State<StaffPage>
                             ),
                           );
                         },
-                        childCount: _filterStaff(state.staff).length,
+                        childCount: filtered.length,
                       ),
                     );
-                  }(),
-                ] else
+                  }),
+                ]
+
+                // ── Initial / unknown state ────────────────────────────
+                else
                   const SliverFillRemaining(child: SizedBox()),
               ],
             );
@@ -440,8 +506,8 @@ class _StaffPageState extends State<StaffPage>
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddStaffSheet,
-          backgroundColor: _gold,
-          foregroundColor: _void,
+          backgroundColor: _T.primary,
+          foregroundColor: Colors.white,
           elevation: 4,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16)),
@@ -452,44 +518,53 @@ class _StaffPageState extends State<StaffPage>
   }
 }
 
-// ─── Staff Stats Bar ──────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// STAFF STATS BAR
+// ════════════════════════════════════════════════════════════════════════════
 class _StaffStats extends StatelessWidget {
   final List<StaffEntity> staff;
   const _StaffStats({required this.staff});
 
   @override
   Widget build(BuildContext context) {
-    final roles = {
-      'owner': staff.where((s) => s.roleName?.toLowerCase() == 'owner').length,
-      'cashier':
-          staff.where((s) => s.roleName?.toLowerCase() == 'cashier').length,
-    };
+    // Guard: safe role comparison with null check
+    final owners = staff
+        .where((s) =>
+            (s.roleName?.toLowerCase() ?? '') == 'owner')
+        .length;
+    final cashiers = staff
+        .where((s) =>
+            (s.roleName?.toLowerCase() ?? '') == 'cashier')
+        .length;
 
     return SizedBox(
-      height: 82,
+      height: 86,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           _MiniStat(
-              label: 'Total',
-              value: staff.length,
-              color: const Color(0xFF7B68EE),
-              bg: const Color(0x1F7B68EE),
-              icon: Icons.people_alt_rounded),
+            label: 'Total',
+            value: staff.length,
+            color: _T.primary,
+            bg:    _T.primaryOpacity(0.1),
+            icon:  Icons.people_alt_rounded,
+          ),
           const SizedBox(width: 10),
           _MiniStat(
-              label: 'Owners',
-              value: roles['owner'] ?? 0,
-              color: const Color(0xFF00D9A3),
-              bg: const Color(0x1A00D9A3),
-              icon: Icons.manage_accounts_rounded),
+            label: 'Owners',
+            value: owners,
+            color: _T.accent,
+            bg:    _T.accentSoft,
+            icon:  Icons.manage_accounts_rounded,
+          ),
           const SizedBox(width: 10),
           _MiniStat(
-              label: 'Cashiers',
-              value: roles['cashier'] ?? 0,
-              color: const Color(0xFFFF9F43),
-              bg: const Color(0x1FFF9F43),
-              icon: Icons.point_of_sale_rounded),
+            label: 'Cashiers',
+            value: cashiers,
+            color: _T.warn,
+            bg:    _T.warnSoft,
+            icon:  Icons.point_of_sale_rounded,
+          ),
         ],
       ),
     );
@@ -497,10 +572,10 @@ class _StaffStats extends StatelessWidget {
 }
 
 class _MiniStat extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color color;
-  final Color bg;
+  final String   label;
+  final int      value;
+  final Color    color;
+  final Color    bg;
   final IconData icon;
 
   const _MiniStat({
@@ -514,12 +589,13 @@ class _MiniStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 100,
+      width: 104,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C28),
+        color: _T.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x18FFFFFF)),
+        border: Border.all(color: _T.border),
+        boxShadow: _T.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -539,21 +615,12 @@ class _MiniStat extends StatelessWidget {
             children: [
               Text(
                 value.toString(),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFFF0F0FF),
-                  height: 1.1,
-                ),
+                style: _T.ts(20,
+                    weight: FontWeight.w800, height: 1.1),
               ),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFF4A4A62),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              Text(label,
+                  style: _T.ts(10,
+                      color: _T.inkMid, weight: FontWeight.w500)),
             ],
           ),
         ],
@@ -562,9 +629,11 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-// ─── Staff Card ───────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// STAFF CARD
+// ════════════════════════════════════════════════════════════════════════════
 class _StaffCard extends StatelessWidget {
-  final StaffEntity staff;
+  final StaffEntity  staff;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -576,50 +645,61 @@ class _StaffCard extends StatelessWidget {
 
   Color get _roleColor {
     switch (staff.roleName?.toLowerCase()) {
-      case 'owner':
-        return const Color(0xFF00D9A3);
-      case 'cashier':
-        return const Color(0xFFFF9F43);
-      default:
-        return const Color(0xFF7B68EE);
+      case 'owner':   return _T.accent;
+      case 'cashier': return _T.warn;
+      default:        return _T.primary;
     }
+  }
+
+  Color get _roleBg {
+    switch (staff.roleName?.toLowerCase()) {
+      case 'owner':   return _T.accentSoft;
+      case 'cashier': return _T.warnSoft;
+      default:        return _T.primaryOpacity(0.1);
+    }
+  }
+
+  /// Safe initials — guards against empty strings
+  String get _initials {
+    final first = staff.firstName.isNotEmpty
+        ? staff.firstName[0].toUpperCase()
+        : '?';
+    final last = staff.lastName.isNotEmpty
+        ? staff.lastName[0].toUpperCase()
+        : '';
+    return '$first$last';
   }
 
   @override
   Widget build(BuildContext context) {
-    final initials =
-        '${staff.firstName.isNotEmpty ? staff.firstName[0] : '?'}${staff.lastName.isNotEmpty ? staff.lastName[0] : ''}';
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C28),
+        color: _T.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x18FFFFFF)),
+        border: Border.all(color: _T.border),
+        boxShadow: _T.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // ── Header
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
-                  color: _roleColor.withOpacity(0.12),
+                  color: _roleBg,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                       color: _roleColor.withOpacity(0.2)),
                 ),
                 child: Center(
                   child: Text(
-                    initials.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: _roleColor,
-                    ),
+                    _initials,
+                    style: _T.ts(14,
+                        weight: FontWeight.w800, color: _roleColor),
                   ),
                 ),
               ),
@@ -629,55 +709,56 @@ class _StaffCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${staff.firstName} ${staff.lastName}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFF0F0FF),
-                      ),
+                      '${staff.firstName} ${staff.lastName}'.trim(),
+                      style: _T.ts(14, weight: FontWeight.w700),
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       staff.email,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF4A4A62),
-                      ),
+                      style: _T.ts(11, color: _T.inkMid),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              if (staff.roleName != null)
-                _RoleBadge(role: staff.roleName!),
+              if (staff.roleName != null && staff.roleName!.isNotEmpty)
+                _RoleBadge(
+                  role:  staff.roleName!,
+                  color: _roleColor,
+                  bg:    _roleBg,
+                ),
             ],
           ),
+
           const SizedBox(height: 12),
-          Container(height: 1, color: const Color(0x18FFFFFF)),
+          const Divider(height: 1, color: _T.border),
           const SizedBox(height: 12),
-          // Info
-          Row(
-            children: [
-              const Icon(Icons.phone_outlined,
-                  size: 13, color: Color(0xFF4A4A62)),
-              const SizedBox(width: 6),
-              Text(
-                staff.phone,
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF8B8BA8)),
+
+          // ── Phone row — guarded against null/empty
+          if ((staff.phone ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.phone_outlined,
+                      size: 13, color: _T.inkMid),
+                  const SizedBox(width: 6),
+                  Text(staff.phone!,
+                      style: _T.ts(12, color: _T.inkMid)),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Actions
+            ),
+
+          // ── Action buttons
           Row(
             children: [
               Expanded(
                 child: _CardBtn(
                   label: 'Edit',
-                  icon: Icons.edit_outlined,
-                  color: const Color(0xFF00D9A3),
-                  bg: const Color(0x1A00D9A3),
+                  icon:  Icons.edit_outlined,
+                  color: _T.primary,
+                  bg:    _T.primaryOpacity(0.08),
                   onTap: onEdit,
                 ),
               ),
@@ -685,9 +766,9 @@ class _StaffCard extends StatelessWidget {
               Expanded(
                 child: _CardBtn(
                   label: 'Remove',
-                  icon: Icons.person_remove_outlined,
-                  color: const Color(0xFFFF5F6D),
-                  bg: const Color(0x1AFF5F6D),
+                  icon:  Icons.person_remove_outlined,
+                  color: _T.danger,
+                  bg:    _T.dangerSoft,
                   onTap: onDelete,
                 ),
               ),
@@ -701,26 +782,21 @@ class _StaffCard extends StatelessWidget {
 
 class _RoleBadge extends StatelessWidget {
   final String role;
-  const _RoleBadge({required this.role});
+  final Color  color;
+  final Color  bg;
+
+  const _RoleBadge({
+    required this.role,
+    required this.color,
+    required this.bg,
+  });
 
   @override
   Widget build(BuildContext context) {
-    Color color;
-    Color bg;
-    switch (role.toLowerCase()) {
-      case 'owner':
-        color = const Color(0xFF00D9A3);
-        bg = const Color(0x1A00D9A3);
-        break;
-      case 'cashier':
-        color = const Color(0xFFFF9F43);
-        bg = const Color(0x1FFF9F43);
-        break;
-      default:
-        color = const Color(0xFF7B68EE);
-        bg = const Color(0x1F7B68EE);
-    }
-
+    // Safe capitalisation guard
+    final display = role.isNotEmpty
+        ? role[0].toUpperCase() + role.substring(1)
+        : role;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -728,20 +804,18 @@ class _RoleBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.25)),
       ),
-      child: Text(
-        role[0].toUpperCase() + role.substring(1),
-        style: TextStyle(
-            fontSize: 11, fontWeight: FontWeight.w600, color: color),
-      ),
+      child: Text(display,
+          style:
+              _T.ts(11, weight: FontWeight.w600, color: color)),
     );
   }
 }
 
 class _CardBtn extends StatelessWidget {
-  final String label;
+  final String   label;
   final IconData icon;
-  final Color color;
-  final Color bg;
+  final Color    color;
+  final Color    bg;
   final VoidCallback onTap;
 
   const _CardBtn({
@@ -757,7 +831,7 @@ class _CardBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(9),
@@ -769,10 +843,8 @@ class _CardBtn extends StatelessWidget {
             Icon(icon, size: 13, color: color),
             const SizedBox(width: 5),
             Text(label,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color)),
+                style: _T.ts(12,
+                    weight: FontWeight.w600, color: color)),
           ],
         ),
       ),
@@ -780,55 +852,22 @@ class _CardBtn extends StatelessWidget {
   }
 }
 
-// ─── States ───────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// ERROR STATE
+// ════════════════════════════════════════════════════════════════════════════
 class _ErrorState extends StatelessWidget {
-  final String message;
+  final String       message;
   final VoidCallback onRetry;
+
   const _ErrorState({required this.message, required this.onRetry});
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                  color: Color(0x1AFF5F6D), shape: BoxShape.circle),
-              child: const Icon(Icons.error_outline_rounded,
-                  size: 36, color: Color(0xFFFF5F6D)),
-            ),
-            const SizedBox(height: 16),
-            Text(message,
-                style: const TextStyle(
-                    fontSize: 13, color: Color(0xFF8B8BA8)),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Retry'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1C1C28),
-                foregroundColor: const Color(0xFFF0F0FF),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  /// Determine if this is a "no data" error vs a real network/server error
+  bool get _isEmptyResult {
+    final m = message.toLowerCase();
+    return m.contains('no staff') ||
+        m.contains('not found') ||
+        m.contains('empty');
   }
-}
-
-class _EmptyStaffState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _EmptyStaffState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -839,31 +878,60 @@ class _EmptyStaffState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                  color: const Color(0x1F7B68EE), shape: BoxShape.circle),
-              child: const Icon(Icons.people_outline_rounded,
-                  size: 36, color: Color(0xFF7B68EE)),
+                color: _isEmptyResult
+                    ? _T.primaryOpacity(0.08)
+                    : _T.dangerSoft,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isEmptyResult
+                    ? Icons.people_outline_rounded
+                    : Icons.wifi_off_rounded,
+                size: 32,
+                color: _isEmptyResult ? _T.primary : _T.danger,
+              ),
             ),
             const SizedBox(height: 16),
-            Text(message,
-                style: const TextStyle(
-                    fontSize: 13, color: Color(0xFF8B8BA8)),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            const Text(
-              'Add your first team member to get started',
-              style: TextStyle(
-                  fontSize: 11, color: Color(0xFF4A4A62)),
-              textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Refresh'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFF5C842),
-                foregroundColor: const Color(0xFF09090F),
+            Text(
+              _isEmptyResult
+                  ? 'No staff members found'
+                  : 'Unable to load staff',
+              style:
+                  _T.ts(16, weight: FontWeight.w700, color: _T.ink),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _isEmptyResult
+                  ? 'Add your first team member to get started.'
+                  : 'Check your connection and try again.',
+              style: _T.ts(13, color: _T.inkMid),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _T.primary,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.refresh_rounded,
+                        color: Colors.white, size: 16),
+                    const SizedBox(width: 6),
+                    Text('Retry',
+                        style: _T.ts(13,
+                            weight: FontWeight.w700,
+                            color: Colors.white)),
+                  ],
+                ),
               ),
             ),
           ],
@@ -873,9 +941,13 @@ class _EmptyStaffState extends StatelessWidget {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// EMPTY STATE (no results / no data)
+// ════════════════════════════════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
-  final String message;
+  final String       message;
   final VoidCallback onAdd;
+
   const _EmptyState({required this.message, required this.onAdd});
 
   @override
@@ -886,31 +958,47 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.people_outline_rounded,
-                size: 52,
-                color: const Color(0xFF4A4A62).withOpacity(0.4)),
-            const SizedBox(height: 12),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _T.bg,
+                shape: BoxShape.circle,
+                border: Border.all(color: _T.border, width: 2),
+              ),
+              child: const Icon(Icons.people_outline_rounded,
+                  size: 32, color: _T.inkLight),
+            ),
+            const SizedBox(height: 14),
             Text(message,
-                style: const TextStyle(
-                    fontSize: 13, color: Color(0xFF4A4A62)),
+                style: _T.ts(15,
+                    weight: FontWeight.w600, color: _T.inkMid),
                 textAlign: TextAlign.center),
-            const SizedBox(height: 20),
+            const SizedBox(height: 4),
+            Text('Tap the button below to add someone.',
+                style: _T.ts(12, color: _T.inkLight),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 24),
             GestureDetector(
               onTap: onAdd,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 10),
+                    horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5C842),
+                  color: _T.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  'Add Staff Member',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF09090F),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person_add_rounded,
+                        color: Colors.white, size: 16),
+                    const SizedBox(width: 6),
+                    Text('Add Staff Member',
+                        style: _T.ts(13,
+                            weight: FontWeight.w700,
+                            color: Colors.white)),
+                  ],
                 ),
               ),
             ),
@@ -921,16 +1009,19 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ─── Search Bar ───────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// SEARCH BAR
+// ════════════════════════════════════════════════════════════════════════════
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClose;
+  final ValueChanged<String>  onChanged;
+  final VoidCallback          onClose;
 
-  const _SearchBar(
-      {required this.controller,
-      required this.onChanged,
-      required this.onClose});
+  const _SearchBar({
+    required this.controller,
+    required this.onChanged,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -941,34 +1032,30 @@ class _SearchBar extends StatelessWidget {
             height: 36,
             child: TextField(
               controller: controller,
-              onChanged: onChanged,
-              autofocus: true,
-              style: const TextStyle(
-                  fontSize: 14, color: Color(0xFFF0F0FF)),
+              onChanged:  onChanged,
+              autofocus:  true,
+              style: _T.ts(14),
               decoration: InputDecoration(
-                hintText: 'Search staff...',
-                hintStyle:
-                    const TextStyle(color: Color(0xFF4A4A62)),
+                hintText: 'Search staff…',
+                hintStyle: _T.ts(13, color: _T.inkMid),
                 prefixIcon: const Icon(Icons.search_rounded,
-                    size: 16, color: Color(0xFF4A4A62)),
+                    size: 16, color: _T.inkMid),
                 filled: true,
-                fillColor: const Color(0xFF16161F),
+                fillColor: _T.bg,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                      color: Color(0x18FFFFFF)),
+                  borderSide: const BorderSide(color: _T.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                      color: Color(0x18FFFFFF)),
+                  borderSide: const BorderSide(color: _T.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                      color: Color(0xFFF5C842), width: 1.5),
+                  borderSide:
+                      const BorderSide(color: _T.primary, width: 1.5),
                 ),
               ),
             ),
@@ -981,12 +1068,11 @@ class _SearchBar extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFF16161F),
+              color: _T.whiteOpacity(0.15),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0x18FFFFFF)),
             ),
             child: const Icon(Icons.close_rounded,
-                size: 14, color: Color(0xFF8B8BA8)),
+                size: 14, color: Colors.white),
           ),
         ),
       ],
@@ -995,8 +1081,9 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _IconBtn extends StatelessWidget {
-  final IconData icon;
+  final IconData     icon;
   final VoidCallback onTap;
+
   const _IconBtn({required this.icon, required this.onTap});
 
   @override
@@ -1007,20 +1094,26 @@ class _IconBtn extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: const Color(0xFF16161F),
+          color: _T.whiteOpacity(0.12),
           borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: const Color(0x18FFFFFF)),
         ),
-        child: Icon(icon, size: 16, color: const Color(0xFF8B8BA8)),
+        child: Icon(icon, size: 16, color: Colors.white),
       ),
     );
   }
 }
 
-// ─── Staff Form Bottom Sheet ──────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// STAFF FORM BOTTOM SHEET
+// ════════════════════════════════════════════════════════════════════════════
 class _StaffFormSheet extends StatefulWidget {
   final StaffEntity? staff;
-  final Function(String name, String email, String password, int branchId) onSave;
+  final void Function(
+    String name,
+    String email,
+    String password,
+    int branchId,
+  ) onSave;
 
   const _StaffFormSheet({this.staff, required this.onSave});
 
@@ -1029,32 +1122,22 @@ class _StaffFormSheet extends StatefulWidget {
 }
 
 class _StaffFormSheetState extends State<_StaffFormSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
+  final _formKey      = GlobalKey<FormState>();
+  final _nameCtrl     = TextEditingController();
+  final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  int _selectedBranchId = 0;
-  bool _obscure = true;
+  int  _selectedBranchId = 0;
+  bool _obscure          = true;
   List<Map<String, dynamic>> _branches = [];
-
-  static const _card    = Color(0xFF1C1C28);
-  static const _panel   = Color(0xFF16161F);
-  static const _border  = Color(0x18FFFFFF);
-  static const _ink     = Color(0xFFF0F0FF);
-  static const _inkDim  = Color(0xFF4A4A62);
-  static const _inkMid  = Color(0xFF8B8BA8);
-  static const _gold    = Color(0xFFF5C842);
-  static const _goldSoft = Color(0x20F5C842);
-  static const _void    = Color(0xFF09090F);
-  static const _coral   = Color(0xFFFF5F6D);
 
   @override
   void initState() {
     super.initState();
     if (widget.staff != null) {
-      _nameCtrl.text = widget.staff!.firstName + ' ' + widget.staff!.lastName;
-      _emailCtrl.text = widget.staff!.email;
-      _selectedBranchId = widget.staff!.branchId ?? 0;
+      final s = widget.staff!;
+      _nameCtrl.text      = '${s.firstName} ${s.lastName}'.trim();
+      _emailCtrl.text     = s.email;
+      _selectedBranchId   = s.branchId ?? 0;
     }
     _loadBranches();
   }
@@ -1068,10 +1151,8 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
   }
 
   Future<void> _loadBranches() async {
-    // TODO: Load branches from API when branches are available
-    setState(() {
-      _branches = [];
-    });
+    // Replace with real branch fetch; keeps list empty for now
+    if (mounted) setState(() => _branches = []);
   }
 
   @override
@@ -1081,7 +1162,7 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: _card,
+        color: _T.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
@@ -1092,30 +1173,33 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Drag handle
               Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 20),
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _inkDim,
+                    color: _T.inkLight,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
+
+              // Header
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _goldSoft,
+                      color: _T.primaryOpacity(0.1),
                       borderRadius: BorderRadius.circular(11),
                     ),
                     child: Icon(
                       isEdit
                           ? Icons.edit_rounded
                           : Icons.person_add_rounded,
-                      color: _gold,
+                      color: _T.primary,
                       size: 18,
                     ),
                   ),
@@ -1125,128 +1209,123 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                     children: [
                       Text(
                         isEdit ? 'Edit Cashier' : 'Add Cashier',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: _ink,
-                        ),
+                        style: _T.ts(17, weight: FontWeight.w800),
                       ),
-                      const Text('Fill in the details',
-                          style: TextStyle(
-                              fontSize: 11, color: _inkDim)),
+                      Text('Fill in the details below',
+                          style: _T.ts(11, color: _T.inkMid)),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              _Input(
-                controller: _nameCtrl,
-                label: 'Full Name',
-                icon: Icons.person_outline_rounded,
-                validator: (v) =>
-                    (v?.isEmpty ?? true) ? 'Required' : null,
+
+              // Full name
+              _FormField(
+                controller:   _nameCtrl,
+                label:        'Full Name',
+                icon:         Icons.person_outline_rounded,
+                validator:    (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 14),
-              _Input(
-                controller: _emailCtrl,
-                label: 'Email',
-                icon: Icons.email_rounded,
+
+              // Email
+              _FormField(
+                controller:   _emailCtrl,
+                label:        'Email',
+                icon:         Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v?.isEmpty ?? true) return 'Required';
-                  if (!(v!.contains('@'))) return 'Invalid email';
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  if (!v.contains('@')) return 'Invalid email';
                   return null;
                 },
               ),
               const SizedBox(height: 14),
+
               // Branch picker
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'BRANCH',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: _inkDim,
-                      letterSpacing: 0.08,
-                    ),
+              _FieldLabel(text: 'Branch'),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(
+                  color: _T.bg,
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: _T.border),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: _branches.any((b) =>
+                            b['id'] == _selectedBranchId)
+                        ? _selectedBranchId
+                        : null,
+                    hint: Text('Select branch',
+                        style: _T.ts(14, color: _T.inkMid)),
+                    isExpanded: true,
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                        color: _T.inkMid),
+                    style: _T.ts(14),
+                    items: _branches.map((branch) {
+                      return DropdownMenuItem<int>(
+                        value: branch['id'] as int,
+                        child: Text(branch['name'] as String),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedBranchId = value);
+                      }
+                    },
                   ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: _panel,
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(color: _border),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<int>(
-                        value: _selectedBranchId,
-                        isExpanded: true,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _inkMid),
-                        style: const TextStyle(color: _ink, fontSize: 14),
-                        items: _branches.map((branch) {
-                          return DropdownMenuItem<int>(
-                            value: branch['id'] as int,
-                            child: Text(
-                              branch['name'] as String,
-                              style: const TextStyle(color: _ink),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedBranchId = value);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
+
+              // Password — add only
               if (!isEdit) ...[
                 const SizedBox(height: 14),
-                _Input(
-                  controller: _passwordCtrl,
-                  label: 'Password',
-                  icon: Icons.lock_outline_rounded,
+                _FormField(
+                  controller:  _passwordCtrl,
+                  label:       'Password',
+                  icon:        Icons.lock_outline_rounded,
                   obscureText: _obscure,
                   suffix: GestureDetector(
-                    onTap: () => setState(() => _obscure = !_obscure),
+                    onTap: () =>
+                        setState(() => _obscure = !_obscure),
                     child: Icon(
                       _obscure
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 16,
-                      color: _inkMid,
+                      color: _T.inkMid,
                     ),
                   ),
                   validator: (v) {
-                    if (v?.isEmpty ?? true) return 'Required';
-                    if ((v?.length ?? 0) < 8) {
-                      return 'At least 8 characters';
-                    }
+                    if (v == null || v.isEmpty) return 'Required';
+                    if (v.length < 8) return 'At least 8 characters';
                     return null;
                   },
                 ),
               ],
+
               const SizedBox(height: 24),
+
+              // Action row
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: _border),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14),
+                        side: const BorderSide(color: _T.border),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Cancel',
-                          style: TextStyle(color: _inkMid)),
+                      child: Text('Cancel',
+                          style: _T.ts(14, color: _T.inkMid)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1256,25 +1335,26 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           widget.onSave(
-                            _nameCtrl.text,
-                            _emailCtrl.text,
+                            _nameCtrl.text.trim(),
+                            _emailCtrl.text.trim(),
                             isEdit ? '' : _passwordCtrl.text,
                             _selectedBranchId,
                           );
                         }
                       },
                       icon: Icon(
-                          isEdit
-                              ? Icons.save_rounded
-                              : Icons.person_add_rounded,
-                          size: 15),
-                      label:
-                          Text(isEdit ? 'Save Changes' : 'Add Cashier'),
+                        isEdit
+                            ? Icons.save_rounded
+                            : Icons.person_add_rounded,
+                        size: 15,
+                      ),
+                      label: Text(
+                          isEdit ? 'Save Changes' : 'Add Cashier'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: _gold,
-                        foregroundColor: _void,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: _T.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
@@ -1290,25 +1370,37 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
   }
 }
 
-// ─── Form Input ───────────────────────────────────────────────────────────────
-class _Input extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final IconData icon;
+// ════════════════════════════════════════════════════════════════════════════
+// FORM HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Uppercase label above each field — consistent with the Reports filter style
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  const _FieldLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: _T.ts(10,
+          weight: FontWeight.w700,
+          color: _T.inkMid,
+          letterSpacing: 0.6),
+    );
+  }
+}
+
+class _FormField extends StatelessWidget {
+  final TextEditingController      controller;
+  final String                     label;
+  final IconData                   icon;
   final String? Function(String?)? validator;
-  final TextInputType? keyboardType;
-  final bool obscureText;
-  final Widget? suffix;
+  final TextInputType?              keyboardType;
+  final bool                       obscureText;
+  final Widget?                    suffix;
 
-  static const _panel  = Color(0xFF16161F);
-  static const _border = Color(0x18FFFFFF);
-  static const _ink    = Color(0xFFF0F0FF);
-  static const _inkDim = Color(0xFF4A4A62);
-  static const _inkMid = Color(0xFF8B8BA8);
-  static const _gold   = Color(0xFFF5C842);
-  static const _coral  = Color(0xFFFF5F6D);
-
-  const _Input({
+  const _FormField({
     required this.controller,
     required this.label,
     required this.icon,
@@ -1323,51 +1415,45 @@ class _Input extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: _inkDim,
-            letterSpacing: 0.08,
-          ),
-        ),
+        _FieldLabel(text: label),
         const SizedBox(height: 6),
         TextFormField(
-          controller: controller,
+          controller:   controller,
           keyboardType: keyboardType,
-          obscureText: obscureText,
-          validator: validator,
-          style: const TextStyle(fontSize: 14, color: _ink),
+          obscureText:  obscureText,
+          validator:    validator,
+          style: _T.ts(14),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, size: 15, color: _inkMid),
+            prefixIcon: Icon(icon, size: 16, color: _T.inkMid),
             suffixIcon: suffix,
             filled: true,
-            fillColor: _panel,
+            fillColor: _T.bg,
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(color: _border),
+              borderSide: const BorderSide(color: _T.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(color: _border),
+              borderSide: const BorderSide(color: _T.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(color: _gold, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _T.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(color: _coral, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _T.danger, width: 1.5),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
-              borderSide: const BorderSide(color: _coral, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _T.danger, width: 1.5),
             ),
-            errorStyle:
-                const TextStyle(fontSize: 11, color: _coral),
+            errorStyle: _T.ts(11, color: _T.danger),
           ),
         ),
       ],

@@ -153,6 +153,30 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       
+                      const SizedBox(height: 16),
+                      
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton(
+                          onPressed: () => context.go(RouteNames.register),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Create Account',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      
                       const SizedBox(height: 32),
                       
                       // Footer

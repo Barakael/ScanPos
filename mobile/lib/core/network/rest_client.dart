@@ -15,7 +15,10 @@ class RestClient implements ApiClient {
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
         ),
       ) {
     _dio.interceptors.addAll([

@@ -7,10 +7,12 @@ import 'core/storage/secure_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'features/analytics/presentation/bloc/analytics_bloc.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/products/presentation/bloc/products_bloc.dart';
 import 'features/sales/presentation/bloc/sales_bloc.dart';
 import 'features/staff/presentation/bloc/staff_bloc.dart';
 import 'features/shops/presentation/bloc/shop_bloc.dart';
+import 'features/transactions/presentation/bloc/transactions_bloc.dart';
 import 'features/users/presentation/bloc/user_bloc.dart';
 
 class App extends StatefulWidget {
@@ -74,6 +76,13 @@ class _AppState extends State<App> with TickerProviderStateMixin {
     ));
 
     _appRouter = AppRouter(secureStorage: sl<SecureStorage>());
+
+    // Check authentication status on app startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AuthBloc>().add(const AuthCheckStatusRequested());
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -168,7 +177,6 @@ class _AppState extends State<App> with TickerProviderStateMixin {
                                   ),
                                 ),
                                 const SizedBox(height: 30),
-                                // App name — no const here because of .withOpacity
                                 FadeTransition(
                                   opacity: _fadeAnimation,
                                   child: Column(
@@ -250,6 +258,7 @@ class _AppState extends State<App> with TickerProviderStateMixin {
         BlocProvider<AnalyticsBloc>(create: (_) => sl<AnalyticsBloc>()),
         BlocProvider<StaffBloc>(create: (_) => sl<StaffBloc>()),
         BlocProvider<ShopBloc>(create: (_) => sl<ShopBloc>()),
+        BlocProvider<TransactionsBloc>(create: (_) => sl<TransactionsBloc>()),
         BlocProvider<UserBloc>(create: (_) => sl<UserBloc>()),
       ],
       child: MaterialApp.router(

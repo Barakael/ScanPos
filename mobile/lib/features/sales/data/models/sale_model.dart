@@ -128,7 +128,7 @@ class SaleModel {
       paymentMethod: json['payment_method']?.toString() ?? 'cash',
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0,
       netAmount: (json['subtotal'] as num?)?.toDouble() ?? 0,
-      totalVat: (json['tax'] as num?)?.toDouble() ?? 0,
+      totalVat: (json['vat'] as num?)?.toDouble() ?? (json['tax'] as num?)?.toDouble() ?? 0,
       total: (json['total'] as num?)?.toDouble() ?? 0,
       discount: 0,
       customerId: null,

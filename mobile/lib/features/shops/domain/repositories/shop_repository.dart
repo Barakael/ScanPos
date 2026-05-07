@@ -7,6 +7,7 @@ abstract class ShopRepository {
     required String address,
     required String phone,
     required String email,
+    double taxRate = 0.0,
     String currency = 'TZS',
     required String ownerName,
     required String ownerEmail,

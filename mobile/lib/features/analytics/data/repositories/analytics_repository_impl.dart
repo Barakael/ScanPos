@@ -10,7 +10,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   const AnalyticsRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<Either<Failure, AnalyticsEntity>> getAnalytics() async {
+  Future<Either<Failure, AnalyticsEntity>> getAnalytics({String? date}) async {
     try {
       final model = await remoteDataSource.getAnalytics();
       return Right(model.toEntity());

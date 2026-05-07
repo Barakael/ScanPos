@@ -18,6 +18,49 @@ import '../widgets/recent_sales_widget.dart';
 import '../widgets/low_stock_alert_widget.dart';
 import '../widgets/sales_chart_widget.dart';
 
+// ════════════════════════════════════════════════════════════════════
+// DESIGN TOKENS
+// ══════════════════════════════════════════════════════════════════
+class _D {
+  static const bg         = Color(0xFFF5F6FA);
+  static const white      = Color(0xFFFFFFFF);
+  static const primary    = Color(0xFF1E3A5F);
+  static const primaryLt  = Color(0xFF2B527A);
+  static const accent     = Color(0xFF00C896);
+  static const accentSoft = Color(0x1A00C896);
+  static const warn       = Color(0xFFFFA726);
+  static const warnSoft   = Color(0x1AFFA726);
+  static const danger     = Color(0xFFFF4D4D);
+  static const dangerSoft = Color(0x1AFF4D4D);
+  static const info       = Color(0xFF3B82F6);
+  static const infoSoft   = Color(0x1A3B82F6);
+  static const ink        = Color(0xFF1A2332);
+  static const inkMid     = Color(0xFF64748B);
+  static const inkLight   = Color(0xFFCBD5E1);
+  static const border     = Color(0xFFE8EDF5);
+
+  static TextStyle ts(double size, {
+    FontWeight weight = FontWeight.w400,
+    Color color = ink,
+    double? height,
+    double? letterSpacing,
+  }) => TextStyle(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+
+  static List<BoxShadow> get cardShadow => [
+    BoxShadow(
+      color: const Color(0xFF1E3A5F).withOpacity(0.07),
+      blurRadius: 14,
+      offset: const Offset(0, 4),
+    ),
+  ];
+}
+
 class OwnerDashboardPage extends StatefulWidget {
   const OwnerDashboardPage({super.key});
 
@@ -53,45 +96,56 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            final name = state is AuthAuthenticated
-                ? 'Welcome, ${state.user.firstName}'
-                : 'Owner Dashboard';
-            return Text(name);
-          },
-        ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.white,
-          labelColor: AppColors.white,
-          unselectedLabelColor: AppColors.white.withAlpha(150),
-          tabs: const [
-            Tab(text: 'Overview', icon: Icon(Icons.dashboard_outlined)),
-            Tab(text: 'Analytics', icon: Icon(Icons.analytics_outlined)),
+      backgroundColor: _D.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _DashHeader(
+              firstName: state is AuthAuthenticated ? state.user.firstName : 'Owner',
+              subtitle: 'Owner Dashboard',
+              actions: [
+                _HeaderAction(
+                  icon: Icons.settings_outlined,
+                  onTap: () => context.push(RouteNames.settings),
+                ),
+                _HeaderAction(
+                  icon: Icons.logout_rounded,
+                  onTap: () => context.read<AuthBloc>().add(const AuthLogoutRequested()),
+                ),
+              ],
+            ),
+            Container(
+              color: _D.white,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: _D.primary,
+                unselectedLabelColor: _D.inkMid,
+                indicatorColor: _D.primary,
+                indicatorWeight: 3,
+                labelStyle: _D.ts(13, weight: FontWeight.w700),
+                unselectedLabelStyle: _D.ts(13, weight: FontWeight.w500),
+                tabs: const [
+                  Tab(text: 'Overview', icon: Icon(Icons.dashboard_outlined, size: 18)),
+                  Tab(text: 'Analytics', icon: Icon(Icons.bar_chart_rounded, size: 18)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildOverviewTab(),
+                  _buildAnalyticsTab(),
+                ],
+              ),
+            ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.white),
-            onPressed: () => context.push(RouteNames.settings),
-          ),
-        ],
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOverviewTab(),
-          _buildAnalyticsTab(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push(RouteNames.createSale),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: AppColors.white),
+      floatingActionButton: _PrimaryFAB(
+        icon: Icons.add_rounded,
+        label: 'New Sale',
+        onTap: () => context.push(RouteNames.createSale),
       ),
     );
   }
@@ -123,7 +177,29 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
               ],
             ),
             const SizedBox(height: 24),
-            const RecentSalesWidget(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Recent Sales', style: _D.ts(15, weight: FontWeight.w700)),
+                GestureDetector(
+                  onTap: () => context.push(RouteNames.sales),
+                  child: Text('See all', style: _D.ts(13, weight: FontWeight.w600, color: _D.primary)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            BlocBuilder<SalesBloc, SalesState>(
+              builder: (context, salesState) {
+                final sales = salesState is SalesLoaded ? salesState.sales : <dynamic>[];
+                if (sales.isEmpty)
+                  return _EmptyState(icon: Icons.receipt_outlined, message: 'No sales recorded yet')
+                else
+                  ...sales.take(5).map((s) => _SaleRow(
+                        sale: s,
+                        onTap: () => context.push('${RouteNames.sales}/${s.id}'),
+                      ));
+              },
+            ),
           ],
         ),
       ),
@@ -195,23 +271,18 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
 
   Widget _buildQuickActions() {
     final actions = [
-      (Icons.point_of_sale, 'New Sale', RouteNames.createSale, AppColors.primary),
-      (Icons.inventory_2_outlined, 'Inventory', RouteNames.inventory, AppColors.accent),
-      (Icons.receipt_long_outlined, 'Sales History', RouteNames.sales, AppColors.warning),
-      (Icons.assessment_outlined, 'Reports', RouteNames.reports, AppColors.info),
-      (Icons.badge_outlined, 'Staff', RouteNames.staff, AppColors.success),
-      (Icons.store_outlined, 'Store Settings', RouteNames.settings, AppColors.grey400),
+      (Icons.point_of_sale_rounded, 'New Sale', RouteNames.createSale, _D.primary),
+      (Icons.inventory_2_outlined, 'Inventory', RouteNames.inventory, _D.accent),
+      (Icons.receipt_long_outlined, 'Sales History', RouteNames.sales, _D.warn),
+      (Icons.assessment_outlined, 'Reports', RouteNames.reports, _D.info),
+      (Icons.badge_outlined, 'Staff', RouteNames.staff, _D.success),
+      (Icons.store_outlined, 'Store Settings', RouteNames.settings, _D.inkMid),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Quick Actions',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
+        Text('Quick Actions', style: _D.ts(15, weight: FontWeight.w700)),
         const SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 3,
@@ -234,91 +305,71 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
   }
 
   Widget _buildStatsSection() {
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<AnalyticsBloc, AnalyticsState>(listener: (context, state) {}),
-        BlocListener<ProductsBloc, ProductsState>(listener: (context, state) {}),
-        BlocListener<SalesBloc, SalesState>(listener: (context, state) {}),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Today\'s Overview',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+    return BlocBuilder<SalesBloc, SalesState>( 
+      builder: (context, salesState) {
+        final sales = salesState is SalesLoaded ? salesState.sales : <dynamic>[];
+        final now = DateTime.now();
+        final today = sales.where((s) {
+          try {
+            return _isSameDay(DateTime.parse(s.createdAt), now);
+          } catch (_) {
+            return false;
+          }
+        }).toList();
+
+        final totalRev = sales.fold(0.0, (s, i) => s + (i.total as num));
+        final todayRev = today.fold(0.0, (s, i) => s + (i.total as num));
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Today\'s Overview', style: _D.ts(15, weight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.35,
+              children: [
+                StatsCard(
+                  title: "Today's Sales",
+                  value: today.length.toString(),
+                  subtitle: CurrencyFormatter.format(todayRev),
+                  icon: Icons.today_rounded,
+                  color: _D.primary,
                 ),
-          ),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.4,
-            children: [
-              BlocBuilder<AnalyticsBloc, AnalyticsState>(
-                builder: (context, state) {
-                  final todaySales =
-                      state is AnalyticsLoaded ? state.analytics.todaySales ?? 0 : 0;
-                  final todayRevenue =
-                      state is AnalyticsLoaded ? state.analytics.todayRevenue ?? 0 : 0;
-                  return StatsCard(
-                    title: 'Today\'s Sales',
-                    value: todaySales.toString(),
-                    subtitle: CurrencyFormatter.format(todayRevenue),
-                    icon: Icons.receipt_outlined,
-                    color: AppColors.primary,
-                  );
-                },
-              ),
-              BlocBuilder<ProductsBloc, ProductsState>(
-                builder: (context, state) {
-                  final totalProducts =
-                      state is ProductsLoaded ? state.products.length : 0;
-                  // FIX: null-safe comparison with ?? 10
-                  final lowStockCount = state is ProductsLoaded
-                      ? state.products
-                          .where((p) => p.stock <= (p.lowStockThreshold ?? 10))
-                          .length
-                      : 0;
-                  return StatsCard(
-                    title: 'Products',
-                    value: totalProducts.toString(),
-                    subtitle: '$lowStockCount low stock',
-                    icon: Icons.inventory_2_outlined,
-                    color: lowStockCount > 0 ? AppColors.warning : AppColors.success,
-                  );
-                },
-              ),
-              BlocBuilder<SalesBloc, SalesState>(
-                builder: (context, state) {
-                  final transactions =
-                      state is SalesLoaded ? state.sales.length : 0;
-                  return StatsCard(
-                    title: 'Transactions',
-                    value: transactions.toString(),
-                    icon: Icons.swap_horiz_outlined,
-                    color: AppColors.accent,
-                  );
-                },
-              ),
-              StatsCard(
-                title: 'Revenue',
-                value: CurrencyFormatter.format(0),
-                icon: Icons.attach_money,
-                color: AppColors.success,
-              ),
-            ],
-          ),
-        ],
-      ),
+                StatsCard(
+                  title: "Today's Revenue",
+                  value: CurrencyFormatter.format(todayRev),
+                  icon: Icons.payments_rounded,
+                  color: _D.accent,
+                ),
+                StatsCard(
+                  title: 'Total Sales',
+                  value: sales.length.toString(),
+                  icon: Icons.receipt_long_rounded,
+                  color: _D.info,
+                ),
+                StatsCard(
+                  title: 'Total Revenue',
+                  value: CurrencyFormatter.format(totalRev),
+                  icon: Icons.account_balance_wallet_rounded,
+                  color: _D.warn,
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildSalesChart() {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -326,11 +377,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Weekly Sales',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
             ),
             const SizedBox(height: 16),
             SizedBox(height: 200, child: SalesChartWidget()),
@@ -342,6 +389,8 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
 
   Widget _buildRevenueChart(dynamic analytics) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -349,11 +398,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Revenue Trend',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -367,7 +412,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
                     LineChartBarData(
                       spots: _getRevenueSpots(analytics),
                       isCurved: true,
-                      color: AppColors.primary,
+                      color: _D.primary,
                       barWidth: 3,
                     ),
                   ],
@@ -382,6 +427,8 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
 
   Widget _buildCategorySalesChart(dynamic analytics) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -389,11 +436,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Sales by Category',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -410,6 +453,8 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
 
   Widget _buildTopProductsSection(dynamic analytics) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -417,11 +462,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Top Products',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
             ),
             const SizedBox(height: 16),
             const Text('Top products will be displayed here'),
@@ -445,56 +486,216 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
 
   List<PieChartSectionData> _getCategorySections(dynamic analytics) {
     return [
-      PieChartSectionData(value: 30, color: AppColors.primary, title: '30%'),
-      PieChartSectionData(value: 25, color: AppColors.accent, title: '25%'),
-      PieChartSectionData(value: 20, color: AppColors.success, title: '20%'),
-      PieChartSectionData(value: 15, color: AppColors.warning, title: '15%'),
-      PieChartSectionData(value: 10, color: AppColors.info, title: '10%'),
+      PieChartSectionData(value: 30, color: _D.primary, title: '30%'),
+      PieChartSectionData(value: 25, color: _D.accent, title: '25%'),
+      PieChartSectionData(value: 20, color: _D.success, title: '20%'),
+      PieChartSectionData(value: 15, color: _D.warn, title: '15%'),
+      PieChartSectionData(value: 10, color: _D.info, title: '10%'),
     ];
   }
 }
 
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
+// ════════════════════════════════════════════════════════════
+// SHARED COMPONENTS
+// ══════════════════════════════════════════════════════════════
 
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
+class _DashHeader extends StatelessWidget {
+  const _DashHeader({
+    required this.firstName,
+    required this.subtitle,
+    required this.actions,
   });
+
+  final String firstName;
+  final String subtitle;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withAlpha(25),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withAlpha(50)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      decoration: BoxDecoration(
+        color: _D.white,
+        boxShadow: _D.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  firstName,
+                  style: _D.ts(20, weight: FontWeight.w700, color: _D.ink),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: _D.ts(13, weight: FontWeight.w500, color: _D.inkMid),
+                ),
+              ],
             ),
-          ],
+          ),
+          Row(
+            children: actions,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderAction extends StatelessWidget {
+  const _HeaderAction({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: _D.primary.withAlpha(25),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: _D.primary, size: 20),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.icon, required this.message});
+  
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: _D.primary.withAlpha(25),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(icon, size: 40, color: _D.primary),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: _D.ts(16, weight: FontWeight.w500, color: _D.inkMid),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SaleRow extends StatelessWidget {
+  const _SaleRow({required this.sale, required this.onTap});
+  
+  final dynamic sale;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '#${sale.id}',
+                      style: _D.ts(12, weight: FontWeight.w600, color: _D.inkMid),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      sale.customerName ?? 'Guest',
+                      style: _D.ts(14, weight: FontWeight.w500, color: _D.ink),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    CurrencyFormatter.format(sale.total),
+                    style: _D.ts(16, weight: FontWeight.w700, color: _D.primary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(sale.createdAt),
+                    style: _D.ts(12, color: _D.inkMid),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+           date1.month == date2.month &&
+           date1.day == date2.day;
+  }
+}
+
+class _PrimaryFAB extends StatelessWidget {
+  const _PrimaryFAB({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: onTap,
+      backgroundColor: _D.primary,
+      foregroundColor: _D.white,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      icon: Icon(icon, size: 20),
+      label: Text(label, style: _D.ts(14, weight: FontWeight.w600, color: _D.white)),
     );
   }
 }
