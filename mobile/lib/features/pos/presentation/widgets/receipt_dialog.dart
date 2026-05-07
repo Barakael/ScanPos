@@ -9,7 +9,7 @@ import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../sales/domain/entities/sale_entity.dart';
-
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 // ════════════════════════════════════════════════════════════════════════════
 // DESIGN TOKENS
 // ════════════════════════════════════════════════════════════════════════════
@@ -367,9 +367,10 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
     if (_isConnectingPrinter || _isPrinting) return;
     setState(() => _isConnectingPrinter = true);
     try {
+      // Check Bluetooth permissions
       final hasPermission = await PrintBluetoothThermal.isPermissionBluetoothGranted;
       if (!hasPermission) {
-        _showError('Bluetooth permission denied. Allow permissions and retry.');
+        _showError('Bluetooth permission denied. Please enable Bluetooth permissions in app settings and retry.');
         return;
       }
 
@@ -383,6 +384,12 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
       if (pairedDevices.isEmpty) {
         _showError('No paired printers found. Pair printer in device settings first.');
         return;
+      }
+      
+      // Debug: Log available devices
+      print('Found ${pairedDevices.length} paired devices:');
+      for (final device in pairedDevices) {
+        print('- ${device.name} (${device.macAdress})');
       }
 
       if (!mounted) return;
@@ -438,16 +445,35 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
   }
 
   Future<bool> _ensurePrinterConnected() async {
-    final isConnected = await PrintBluetoothThermal.connectionStatus;
-    if (isConnected) return true;
+    try {
+      final isConnected = await PrintBluetoothThermal.connectionStatus;
+      print('Current printer connection status: $isConnected');
+      if (isConnected) return true;
 
-    final prefs = await SharedPreferences.getInstance();
-    final savedMac = prefs.getString(_printerMacKey);
-    if (savedMac == null || savedMac.isEmpty) return false;
+      final prefs = await SharedPreferences.getInstance();
+      final savedMac = prefs.getString(_printerMacKey);
+      if (savedMac == null || savedMac.isEmpty) {
+        print('No saved printer MAC address found');
+        return false;
+      }
 
-    final connected = await PrintBluetoothThermal.connect(macPrinterAddress: savedMac);
-    if (!connected) return false;
-    return true;
+      print('Attempting to reconnect to printer: $savedMac');
+      
+      // Add timeout for connection attempt
+      final connected = await PrintBluetoothThermal.connect(
+        macPrinterAddress: savedMac
+      ).timeout(const Duration(seconds: 10));
+      
+      print('Reconnection result: $connected');
+      if (!connected) return false;
+      
+      // Wait a moment for connection to stabilize
+      await Future.delayed(const Duration(milliseconds: 1000));
+      return true;
+    } catch (e) {
+      print('Error ensuring printer connection: $e');
+      return false;
+    }
   }
 
   Future<List<int>> _buildThermalTicketBytes(SaleEntity sale) async {
@@ -532,36 +558,116 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
     return bytes;
   }
 
-  // ── Print via system dialog ────────────────────────────────────────────
-  Future<void> _printReceipt() async {
-    if (_isPrinting) return;
-    setState(() => _isPrinting = true);
-    HapticFeedback.mediumImpact();
+Future<void> _printReceipt() async {
+  if (_isPrinting) return;
+  setState(() => _isPrinting = true);
+  HapticFeedback.mediumImpact();
 
-    try {
-      final printerConnected = await _ensurePrinterConnected();
-      if (printerConnected) {
-        final ticket = await _buildThermalTicketBytes(widget.sale);
-        final ok = await PrintBluetoothThermal.writeBytes(ticket);
-        if (!ok) {
-          _showError('Failed to print on Bluetooth printer.');
-        }
-      } else {
-        final pdfBytes = await _buildReceiptPdf(widget.sale);
-        // Fallback for systems without thermal bluetooth printer
-        await Printing.layoutPdf(
-          onLayout: (_) async => pdfBytes,
-          name: 'Receipt_${widget.sale.id}',
-        );
-      }
-    } catch (e) {
-      _showError('Print failed: $e');
-    } finally {
-      if (mounted) setState(() => _isPrinting = false);
+  try {
+    await SunmiPrinter.bindingPrinter();
+
+    // ── Header
+    await SunmiPrinter.printText(
+      'TERA POS\n',
+      style: SunmiTextStyle(bold: true, fontSize: 40, align: SunmiPrintAlign.CENTER),
+    );
+    await SunmiPrinter.printText(
+      'Point of Sale\n',
+      style: SunmiTextStyle(fontSize: 24, align: SunmiPrintAlign.CENTER),
+    );
+    await SunmiPrinter.line();
+
+    // ── Receipt meta
+    await SunmiPrinter.printText('Receipt #: ${widget.sale.id}\n');
+    await SunmiPrinter.printText(
+      'Date: ${DateFormat('MMM dd, yyyy  HH:mm').format(widget.sale.createdAt)}\n',
+    );
+    await SunmiPrinter.line();
+
+    // ── Items
+    for (final item in widget.sale.items) {
+      await SunmiPrinter.printText(
+        '${item.productName}\n',
+        style: SunmiTextStyle(bold: true),
+      );
+      await SunmiPrinter.printRow(cols: [
+        SunmiColumn(
+          text: '${item.quantity} x ${CurrencyFormatter.format(item.unitPrice)}',
+          width: 2,
+        ),
+        SunmiColumn(
+          text: CurrencyFormatter.format(item.subtotal),
+          width: 1,
+        ),
+      ]);
     }
-  }
 
-  // ── Share as PDF ───────────────────────────────────────────────────────
+    await SunmiPrinter.line();
+
+    // ── Subtotal
+    await SunmiPrinter.printRow(cols: [
+      SunmiColumn(text: 'Subtotal', width: 2),
+      SunmiColumn(
+        text: CurrencyFormatter.format(widget.sale.subtotal),
+        width: 1,
+      ),
+    ]);
+
+    // ── VAT
+    await SunmiPrinter.printRow(cols: [
+      SunmiColumn(text: 'VAT (18%)', width: 2),
+      SunmiColumn(
+        text: CurrencyFormatter.format(widget.sale.totalVat),
+        width: 1,
+      ),
+    ]);
+
+    await SunmiPrinter.line();
+
+    // ── Total (print bold text then the row)
+    await SunmiPrinter.printText(
+      'TOTAL\n',
+      style: SunmiTextStyle(bold: true, fontSize: 30),
+    );
+    await SunmiPrinter.printText(
+      '${CurrencyFormatter.format(widget.sale.total)}\n',
+      style: SunmiTextStyle(bold: true, fontSize: 30, align: SunmiPrintAlign.RIGHT),
+    );
+
+    await SunmiPrinter.lineWrap(1);
+
+    // ── Payment
+    await SunmiPrinter.printText(
+      'Payment: ${_payLabel(widget.sale.paymentMethod)}\n',
+    );
+
+    await SunmiPrinter.line();
+
+    // ── Footer
+    await SunmiPrinter.printText(
+      'Thank you for your purchase!\n',
+      style: SunmiTextStyle(bold: true, align: SunmiPrintAlign.CENTER),
+    );
+    await SunmiPrinter.printText(
+      'Powered by Tera POS\n',
+      style: SunmiTextStyle(align: SunmiPrintAlign.CENTER),
+    );
+
+    await SunmiPrinter.lineWrap(3);
+    await SunmiPrinter.cut();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Receipt printed!')),
+      );
+    }
+  } catch (e) {
+    debugPrint('🖨️ Sunmi print error: $e');
+    _showError('Print failed: $e');
+  } finally {
+    if (mounted) setState(() => _isPrinting = false);
+  }
+}  // ── Share as PDF ───────────────────────────────────────────────────────
   Future<void> _sharePdf() async {
     if (_isPrinting) return;
     setState(() => _isPrinting = true);
@@ -1036,12 +1142,10 @@ class _ActionBar extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: onClose,
-              icon: const Icon(Icons.point_of_sale_rounded,
-                  size: 16),
+              icon: const Icon(Icons.point_of_sale_rounded, size: 16),
               label: const Text('New Sale'),
               style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 backgroundColor: _C.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
