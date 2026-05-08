@@ -2,16 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/utils/currency_formatter.dart';
 
-class PaymentSelection {
-  const PaymentSelection({
-    required this.method,
-    required this.amountTendered,
-  });
-
-  final String method;
-  final double amountTendered;
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 // LOCAL DESIGN TOKENS
 // ════════════════════════════════════════════════════════════════════════════
@@ -48,11 +38,11 @@ class PaymentMethodDialog extends StatefulWidget {
   const PaymentMethodDialog({
     super.key,
     required this.total,
-    required this.onConfirm,
+    required this.onPaymentMethodSelected,
   });
 
   final double total;
-  final void Function(PaymentSelection selection) onConfirm;
+  final void Function(String method) onPaymentMethodSelected;
 
   @override
   State<PaymentMethodDialog> createState() => _PaymentMethodDialogState();
@@ -61,16 +51,12 @@ class PaymentMethodDialog extends StatefulWidget {
 class _PaymentMethodDialogState extends State<PaymentMethodDialog>
     with SingleTickerProviderStateMixin {
   String? _selected;
-  late final TextEditingController _cashAmountCtrl;
   late final AnimationController _animCtrl;
   late final Animation<double>   _scaleAnim;
 
   @override
   void initState() {
     super.initState();
-    _cashAmountCtrl = TextEditingController(
-      text: widget.total.toStringAsFixed(2),
-    );
     _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 280),
@@ -84,7 +70,6 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog>
 
   @override
   void dispose() {
-    _cashAmountCtrl.dispose();
     _animCtrl.dispose();
     super.dispose();
   }
@@ -97,31 +82,7 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog>
   void _confirm() {
     if (_selected == null) return;
     HapticFeedback.mediumImpact();
-
-    double amount = widget.total;
-    if (_selected == 'cash') {
-      final parsed =
-          double.tryParse(_cashAmountCtrl.text.replaceAll(',', '').trim());
-      if (parsed == null || parsed < 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enter a valid amount tendered')),
-        );
-        return;
-      }
-      if (parsed < widget.total) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Amount must be at least ${CurrencyFormatter.format(widget.total)}',
-            ),
-          ),
-        );
-        return;
-      }
-      amount = parsed;
-    }
-
-    widget.onConfirm(PaymentSelection(method: _selected!, amountTendered: amount));
+    widget.onPaymentMethodSelected(_selected!);
   }
 
   @override
@@ -239,24 +200,6 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog>
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
                   children: [
-                    if (_selected == 'cash') ...[
-                      TextField(
-                        controller: _cashAmountCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Amount tendered',
-                          hintText: CurrencyFormatter.format(widget.total),
-                          filled: true,
-                          fillColor: _C.bg,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
                     _PayOption(
                       icon:        Icons.payments_rounded,
                       label:       'Cash',

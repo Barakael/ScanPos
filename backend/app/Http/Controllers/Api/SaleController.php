@@ -41,12 +41,12 @@ class SaleController extends Controller
             'items'                => 'required|array|min:1',
             'items.*.product_id'   => 'required|exists:products,id',
             'items.*.quantity'     => 'required|integer|min:1',
-            'customer_name'        => 'required|string|max:255',
-            'customer_phone'       => 'required|string|max:64',
-            'customer_address'     => 'required|string|max:255',
+            'customer_name'        => 'nullable|string|max:255',
+            'customer_phone'       => 'nullable|string|max:64',
+            'customer_address'     => 'nullable|string|max:255',
             'customer_id_type'     => 'nullable|string|max:64',
             'customer_id'          => 'nullable|string|max:128',
-            'amount_tendered'      => 'required|numeric|min:0',
+            'amount_tendered'      => 'nullable|numeric|min:0',
         ]);
 
         $sale = DB::transaction(function () use ($request) {
@@ -89,7 +89,10 @@ class SaleController extends Controller
             $totalExclTax = round($total / $divisor, 2);
             $totalTax     = round($total - $totalExclTax, 2);
 
-            $amountTendered = round((float) $request->amount_tendered, 2);
+            $rawTendered = $request->input('amount_tendered');
+            $amountTendered = ($rawTendered === null || $rawTendered === '')
+                ? $total
+                : round((float) $rawTendered, 2);
 
             if ($request->payment_method === 'cash' && $amountTendered < $total) {
                 abort(422, 'Amount tendered must be at least the sale total.');
