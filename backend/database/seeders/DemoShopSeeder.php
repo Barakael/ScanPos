@@ -39,6 +39,10 @@ class DemoShopSeeder extends Seeder
             $owner->update(['shop_id' => $shop->id]);
         }
 
-        User::whereNull('shop_id')->update(['shop_id' => $shop->id]);
+        // Assign demo shop to staff who should "adopt" the owner's shop_id.
+        // Exclude super_admin so admin@pos.com doesn't get a shop by default.
+        User::whereNull('shop_id')
+            ->where('role', '!=', 'super_admin')
+            ->update(['shop_id' => $shop->id]);
     }
 }
