@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../../../shops/data/models/shop_model.dart';
 import '../../domain/entities/user_entity.dart';
 
 part 'user_model.g.dart';
@@ -14,6 +15,8 @@ class UserModel {
   final bool isVerified;
   final RoleModel? role;
   final String? companyId;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final ShopModel? shop;
   final List<String>? permissions;
 
   const UserModel({
@@ -26,13 +29,50 @@ class UserModel {
     required this.isVerified,
     this.role,
     this.companyId,
+    this.shop,
     this.permissions,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) =>
-      _$UserModelFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json);
+    final shopRaw = copy.remove('shop');
+    final base = _$UserModelFromJson(copy);
+    return UserModel(
+      id: base.id,
+      firstName: base.firstName,
+      lastName: base.lastName,
+      email: base.email,
+      phone: base.phone,
+      avatarUrl: base.avatarUrl,
+      isVerified: base.isVerified,
+      role: base.role,
+      companyId: base.companyId,
+      shop: shopRaw is Map<String, dynamic>
+          ? ShopModel.fromApi(shopRaw)
+          : null,
+      permissions: base.permissions,
+    );
+  }
 
-  Map<String, dynamic> toJson() => _$UserModelToJson(this);
+  Map<String, dynamic> toJson() {
+    final j = _$UserModelToJson(UserModel(
+      id: id,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      phone: phone,
+      avatarUrl: avatarUrl,
+      isVerified: isVerified,
+      role: role,
+      companyId: companyId,
+      shop: null,
+      permissions: permissions,
+    ));
+    if (shop != null) {
+      j['shop'] = shop!.toApiJson();
+    }
+    return j;
+  }
 
   UserEntity toEntity() => UserEntity(
         id: id,
@@ -45,6 +85,7 @@ class UserModel {
         roleId: role?.id ?? '',
         roleName: role?.name ?? '',
         companyId: companyId,
+        shop: shop,
         permissions: permissions ?? [],
       );
 }
@@ -72,7 +113,13 @@ class AuthResponseModel {
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
     // Custom parsing to handle Laravel API response structure
     final userJson = json['user'] as Map<String, dynamic>;
-    
+
+    ShopModel? shopModel;
+    final shopRaw = userJson['shop'];
+    if (shopRaw is Map<String, dynamic>) {
+      shopModel = ShopModel.fromApi(shopRaw);
+    }
+
     final user = UserModel(
       id: userJson['id']?.toString() ?? '',
       firstName: _extractFirstName(userJson['name']?.toString() ?? ''),
@@ -81,11 +128,14 @@ class AuthResponseModel {
       phone: userJson['phone']?.toString(),
       avatarUrl: userJson['avatar_url']?.toString(),
       isVerified: userJson['email_verified_at'] != null,
-      role: userJson['role'] != null ? RoleModel(
-        id: userJson['role']?.toString() ?? '',
-        name: userJson['role']?.toString() ?? '',
-      ) : null,
+      role: userJson['role'] != null
+          ? RoleModel(
+              id: userJson['role']?.toString() ?? '',
+              name: userJson['role']?.toString() ?? '',
+            )
+          : null,
       companyId: userJson['shop_id']?.toString(),
+      shop: shopModel,
       permissions: null, // Laravel doesn't provide permissions in login response
     );
 

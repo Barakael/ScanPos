@@ -16,8 +16,6 @@ AnalyticsModel _$AnalyticsModelFromJson(Map<String, dynamic> json) =>
       dailySales: (json['dailySales'] as List<dynamic>)
           .map((e) => DailySalesModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      todayTransactions: null,
-      todayTotalRevenue: null,
     );
 
 Map<String, dynamic> _$AnalyticsModelToJson(AnalyticsModel instance) =>

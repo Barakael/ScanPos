@@ -13,7 +13,9 @@ import '../../../sales/presentation/bloc/sales_bloc.dart';
 import '../../../sales/presentation/bloc/sales_event.dart';
 import '../../../sales/presentation/bloc/sales_state.dart';
 
+import '../../../shops/domain/entities/shop_entity.dart';
 import '../widgets/barcode_scanner_widget.dart';
+import '../widgets/customer_info_dialog.dart';
 import '../widgets/payment_method_dialog.dart';
 import '../widgets/receipt_dialog.dart';
 import '../../domain/models/cart_item.dart';
@@ -24,7 +26,6 @@ import '../../domain/models/cart_item.dart';
 class _T {
   static const bg = Color(0xFFF5F6FA);
   static const white = Color(0xFFFFFFFF);
-  static const card = Color(0xFFFFFFFF);
   static const primary = Color(0xFF1E3A5F);
   static const primaryLt = Color(0xFF2B527A);
   static const accent = Color(0xFF00C896);
@@ -113,10 +114,11 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  /// Sum of line totals (prices treated as VAT-inclusive, matching backend).
   double get _subtotal =>
       _cart.fold(0.0, (s, i) => s + i.product.price * i.quantity);
-  double get _tax => _subtotal * 0.18;
-  double get _total => _subtotal + _tax;
+  double get _total => _subtotal;
+  double get _tax => _subtotal - (_subtotal / 1.18);
   int get _itemCount => _cart.fold(0, (s, i) => s + i.quantity);
 
   void _addToCart(ProductEntity product) {
@@ -161,25 +163,31 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
 
   void _clearCart() => setState(() => _cart.clear());
 
-  void _showPaymentDialog() {
+  Future<void> _showPaymentDialog() async {
     if (_cart.isEmpty) {
       _toast('Add items to cart first', isError: true);
       return;
     }
 
-    showDialog(
+    final customer = await showDialog<CustomerInfo>(
+      context: context,
+      builder: (_) => const CustomerInfoDialog(),
+    );
+    if (!mounted || customer == null) return;
+
+    final payment = await showDialog<PaymentSelection>(
       context: context,
       builder: (_) => PaymentMethodDialog(
         total: _total,
-        onPaymentMethodSelected: (method) {
-          context.pop();
-          _processSale(method);
-        },
+        onConfirm: (selection) => Navigator.of(context).pop(selection),
       ),
     );
+    if (!mounted || payment == null) return;
+
+    _processSale(customer, payment);
   }
 
-  void _processSale(String paymentMethod) {
+  void _processSale(CustomerInfo customer, PaymentSelection payment) {
     final authState = context.read<AuthBloc>().state;
     if (authState is! AuthAuthenticated) {
       _toast('Authentication error. Please log in again.', isError: true);
@@ -200,21 +208,32 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
       'subtotal': _subtotal,
       'tax': _tax,
       'total': _total,
-      'payment_method': paymentMethod,
+      'payment_method': payment.method,
+      'amount_tendered': payment.amountTendered,
       'cashier_id': authState.user.id,
-      'customer_name': 'Walk-in Customer',
-      'customer_phone': null,
+      'customer_name': customer.name,
+      'customer_phone': customer.phone,
+      'customer_address': customer.address,
+      'customer_id_type': customer.idType.isEmpty ? null : customer.idType,
+      'customer_id': customer.idNumber.isEmpty ? null : customer.idNumber,
     }));
   }
 
   void _handleSaleCreated(BuildContext ctx, SaleCreated state) {
     setState(() => _processingPayment = false);
 
+    ShopEntity? shop;
+    final auth = context.read<AuthBloc>().state;
+    if (auth is AuthAuthenticated) {
+      shop = auth.user.shop;
+    }
+
     showDialog(
       context: ctx,
       barrierDismissible: false,
       builder: (_) => ReceiptDialog(
         sale: state.sale,
+        shop: shop,
         onClose: () {
           context.pop();
           _clearCart();
@@ -1089,7 +1108,7 @@ class _CartSheetState extends State<_CartSheet> {
   }
 
   double get _sub => _localCart.fold(0.0, (s, i) => s + i.product.price * i.quantity);
-  double get _tax => _sub * 0.18;
+  double get _tax => _sub - (_sub / 1.18);
   double get _total => _sub + _tax;
 
   @override

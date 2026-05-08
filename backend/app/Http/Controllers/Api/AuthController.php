@@ -25,6 +25,7 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user  = Auth::user();
+        $user->load('shop');
         $token = $user->createToken('pos-token')->plainTextToken;
 
         ActivityLog::record('login', "User {$user->name} logged in", $user->id, $request->ip());
@@ -38,6 +39,7 @@ class AuthController extends Controller
                 'role'      => $user->role,
                 'shop_id'   => $user->shop_id,
                 'branch_id' => $user->branch_id,
+                'shop'      => $user->shop,
             ],
         ]);
     }
@@ -45,6 +47,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
+        $user->load('shop');
 
         return response()->json([
             'id'        => $user->id,
@@ -53,6 +56,7 @@ class AuthController extends Controller
             'role'      => $user->role,
             'shop_id'   => $user->shop_id,
             'branch_id' => $user->branch_id,
+            'shop'      => $user->shop,
         ]);
     }
 

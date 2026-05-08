@@ -64,6 +64,26 @@ class SaleModel {
   final String? customerId;
   final String? customerName;
   final String? customerPhone;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String? customerAddress;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String? customerIdType;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String serialNumber;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String znr;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String uin;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String verificationCode;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final double totalExclTax;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final double totalTax;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final double amountTendered;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final double cashChange;
   final String cashierId;
   final String companyId;
   @JsonKey(name: 'saleItems', defaultValue: [])
@@ -85,6 +105,16 @@ class SaleModel {
     this.customerId,
     this.customerName,
     this.customerPhone,
+    this.customerAddress,
+    this.customerIdType,
+    this.serialNumber = '',
+    this.znr = '',
+    this.uin = '',
+    this.verificationCode = '',
+    this.totalExclTax = 0,
+    this.totalTax = 0,
+    this.amountTendered = 0,
+    this.cashChange = 0,
     required this.cashierId,
     required this.companyId,
     required this.items,
@@ -119,23 +149,44 @@ class SaleModel {
         ? (DateTime.tryParse(createdRaw) ?? DateTime.now())
         : DateTime.now();
 
+    final serial = json['serial_number']?.toString() ?? '';
+    final totalExcl =
+        (json['total_excl_tax'] as num?)?.toDouble() ?? 0.0;
+    final totalTaxApi =
+        (json['total_tax'] as num?)?.toDouble() ??
+            (json['tax'] as num?)?.toDouble() ??
+            0.0;
+
     return SaleModel(
       id: json['id']?.toString() ?? '',
-      invoiceNo: json['id']?.toString() ?? '',
+      invoiceNo: serial.isNotEmpty ? serial : (json['id']?.toString() ?? ''),
       status: 'completed',
       taxType: '',
       vatType: '',
       paymentMethod: json['payment_method']?.toString() ?? 'cash',
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0,
       netAmount: (json['subtotal'] as num?)?.toDouble() ?? 0,
-      totalVat: (json['vat'] as num?)?.toDouble() ?? (json['tax'] as num?)?.toDouble() ?? 0,
+      totalVat: totalTaxApi,
       total: (json['total'] as num?)?.toDouble() ?? 0,
       discount: 0,
-      customerId: null,
-      customerName: null,
-      customerPhone: null,
+      customerId: json['customer_id']?.toString(),
+      customerName: json['customer_name']?.toString(),
+      customerPhone: json['customer_phone']?.toString(),
+      customerAddress: json['customer_address']?.toString(),
+      customerIdType: json['customer_id_type']?.toString(),
+      serialNumber: serial,
+      znr: json['znr']?.toString() ?? '',
+      uin: json['uin']?.toString() ?? '',
+      verificationCode: json['verification_code']?.toString() ?? '',
+      totalExclTax: totalExcl,
+      totalTax: totalTaxApi,
+      amountTendered:
+          (json['amount_tendered'] as num?)?.toDouble() ?? 0.0,
+      cashChange: (json['change'] as num?)?.toDouble() ??
+          (json['cash_change'] as num?)?.toDouble() ??
+          0.0,
       cashierId: json['cashier_id']?.toString() ?? '',
-      companyId: '',
+      companyId: json['shop_id']?.toString() ?? '',
       items: items,
       createdAt: createdAt,
     );
@@ -156,6 +207,16 @@ class SaleModel {
         customerId: customerId,
         customerName: customerName,
         customerPhone: customerPhone,
+        customerAddress: customerAddress,
+        customerIdType: customerIdType,
+        serialNumber: serialNumber,
+        znr: znr,
+        uin: uin,
+        verificationCode: verificationCode,
+        totalExclTax: totalExclTax,
+        totalTax: totalTax,
+        amountTendered: amountTendered,
+        cashChange: cashChange,
         cashierId: cashierId,
         companyId: companyId,
         items: items.map((i) => i.toEntity()).toList(),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection_container.dart';
 import 'core/router/app_router.dart';
@@ -140,33 +139,18 @@ class _AppState extends State<App> with TickerProviderStateMixin {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Logo
-                                Container(
+                                // Logo (drop assets/images/logo/logo.png)
+                                SizedBox(
                                   width: 120,
                                   height: 120,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFF3B82F6),
-                                        Color(0xFF2563EB),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
+                                  child: Image.asset(
+                                    'assets/images/logo/logo.png',
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => Icon(
+                                      Icons.point_of_sale_rounded,
+                                      size: 72,
+                                      color: Colors.white.withOpacity(0.95),
                                     ),
-                                    borderRadius: BorderRadius.circular(30),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF3B82F6)
-                                            .withOpacity(0.3),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.store_rounded,
-                                    size: 60,
-                                    color: Colors.white,
                                   ),
                                 ),
                                 const SizedBox(height: 30),

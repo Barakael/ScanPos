@@ -36,6 +36,16 @@ class SaleEntity extends Equatable {
   final String? customerId;
   final String? customerName;
   final String? customerPhone;
+  final String? customerAddress;
+  final String? customerIdType;
+  final String serialNumber;
+  final String znr;
+  final String uin;
+  final String verificationCode;
+  final double totalExclTax;
+  final double totalTax;
+  final double amountTendered;
+  final double cashChange;
   final String cashierId;
   final String companyId;
   final List<SaleItemEntity> items;
@@ -56,6 +66,16 @@ class SaleEntity extends Equatable {
     this.customerId,
     this.customerName,
     this.customerPhone,
+    this.customerAddress,
+    this.customerIdType,
+    this.serialNumber = '',
+    this.znr = '',
+    this.uin = '',
+    this.verificationCode = '',
+    this.totalExclTax = 0,
+    this.totalTax = 0,
+    this.amountTendered = 0,
+    this.cashChange = 0,
     required this.cashierId,
     required this.companyId,
     required this.items,
@@ -63,5 +83,5 @@ class SaleEntity extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, invoiceNo];
+  List<Object?> get props => [id, invoiceNo, serialNumber];
 }

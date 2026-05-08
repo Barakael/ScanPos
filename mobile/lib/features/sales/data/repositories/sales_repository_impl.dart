@@ -33,11 +33,20 @@ class SalesRepositoryImpl implements SalesRepository {
       _ => 'cash',
     };
 
+    final tendered = raw['amount_tendered'];
+    final amountTendered = tendered is num
+        ? tendered.toDouble()
+        : double.tryParse(tendered?.toString() ?? '') ?? 0.0;
+
     return {
       'payment_method': method,
       'items': items,
       'customer_name': raw['customer_name'],
       'customer_phone': raw['customer_phone'],
+      'customer_address': raw['customer_address'],
+      'customer_id_type': raw['customer_id_type'],
+      'customer_id': raw['customer_id'],
+      'amount_tendered': amountTendered,
     };
   }
 

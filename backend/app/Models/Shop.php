@@ -7,7 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 class Shop extends Model
 {
     protected $fillable = [
-        'name', 'owner_id', 'address', 'phone', 'email', 'tax_rate', 'currency',
+        'name',
+        'owner_id',
+        'address',
+        'phone',
+        'email',
+        'tax_rate',
+        'currency',
+        'tin',
+        'vrn',
+        'mobile',
+        'location',
+        'tax_office',
+        'serial_prefix',
+        'receipt_counter',
     ];
 
     protected $casts = [

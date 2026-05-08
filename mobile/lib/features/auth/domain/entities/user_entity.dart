@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../shops/domain/entities/shop_entity.dart';
+
 class UserEntity extends Equatable {
   final String id;
   final String firstName;
@@ -11,6 +13,7 @@ class UserEntity extends Equatable {
   final String roleId;
   final String roleName;
   final String? companyId;
+  final ShopEntity? shop;
   final List<String> permissions;
 
   const UserEntity({
@@ -24,6 +27,7 @@ class UserEntity extends Equatable {
     required this.roleId,
     required this.roleName,
     this.companyId,
+    this.shop,
     this.permissions = const [],
   });
 
@@ -36,5 +40,5 @@ class UserEntity extends Equatable {
   bool hasPermission(String permission) => permissions.contains(permission);
 
   @override
-  List<Object?> get props => [id, email, roleName, companyId];
+  List<Object?> get props => [id, email, roleName, companyId, shop];
 }

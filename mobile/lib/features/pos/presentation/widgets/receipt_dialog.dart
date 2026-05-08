@@ -1,32 +1,34 @@
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
+
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../sales/domain/entities/sale_entity.dart';
-import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
-// ════════════════════════════════════════════════════════════════════════════
-// DESIGN TOKENS
-// ════════════════════════════════════════════════════════════════════════════
+import '../../../shops/domain/entities/shop_entity.dart';
+import '../../domain/tra_receipt_defaults.dart';
+import 'tra_receipt_formatter.dart';
+
 class _C {
-  static const bg        = Color(0xFFF5F6FA);
-  static const white     = Color(0xFFFFFFFF);
-  static const primary   = Color(0xFF1E3A5F);
+  static const white = Color(0xFFFFFFFF);
+  static const primary = Color(0xFF1E3A5F);
   static const primaryLt = Color(0xFF2B527A);
-  static const accent    = Color(0xFF00C896);
-  static const ink       = Color(0xFF1A2332);
-  static const inkMid    = Color(0xFF64748B);
-  static const inkLight  = Color(0xFFCBD5E1);
-  static const border    = Color(0xFFE8EDF5);
+  static const accent = Color(0xFF00C896);
+  static const ink = Color(0xFF1A2332);
+  static const inkMid = Color(0xFF64748B);
+  static const border = Color(0xFFE8EDF5);
 
   static Color primaryOp(double o) => primary.withOpacity(o);
-  static Color accentOp(double o)  => accent.withOpacity(o);
-  static Color whiteOp(double o)   => Colors.white.withOpacity(o);
+  static Color accentOp(double o) => accent.withOpacity(o);
+  static Color whiteOp(double o) => Colors.white.withOpacity(o);
 }
 
 TextStyle _ts(
@@ -38,298 +40,67 @@ TextStyle _ts(
     TextStyle(
         fontSize: size, fontWeight: weight, color: color, height: height);
 
-// ════════════════════════════════════════════════════════════════════════════
-// PDF RECEIPT BUILDER
-// Generates an 80 mm thermal-roll style receipt PDF.
-// Uses the `pdf` package (pw.*) — distinct from Flutter widgets.
-// ════════════════════════════════════════════════════════════════════════════
-Future<Uint8List> _buildReceiptPdf(SaleEntity sale) async {
+Future<Uint8List> _buildReceiptPdf(SaleEntity sale, ShopEntity shop) async {
   final doc = pw.Document();
-
-  // 80 mm wide thermal roll, infinite height (single-page receipt)
   const pageFormat = PdfPageFormat(
     80 * PdfPageFormat.mm,
     double.infinity,
-    marginAll: 6 * PdfPageFormat.mm,
+    marginAll: 4 * PdfPageFormat.mm,
   );
 
-  // PDF-space colour constants (PdfColor, not Flutter Color)
-  const pdfPrimary = PdfColors.indigo900;
-  const pdfAccent  = PdfColor.fromInt(0xFF00C896);
-  const pdfInkMid  = PdfColor.fromInt(0xFF64748B);
-  const pdfBorder  = PdfColor.fromInt(0xFFE8EDF5);
+  final lines = TraReceiptFormatter.buildLines(sale: sale, shop: shop);
 
-  String payLabel(String? m) {
-    switch ((m ?? '').toLowerCase()) {
-      case 'cash':   return 'Cash';
-      case 'card':   return 'Card';
-      case 'mobile': return 'Mobile Money';
-      default:       return m ?? '—';
-    }
-  }
-
-  final dateStr =
-      DateFormat('MMM dd, yyyy  HH:mm').format(sale.createdAt);
+  pw.MemoryImage? logo;
+  try {
+    final data = await rootBundle.load('assets/images/logo/logo.png');
+    logo = pw.MemoryImage(data.buffer.asUint8List());
+  } catch (_) {}
 
   doc.addPage(
     pw.Page(
       pageFormat: pageFormat,
       build: (pw.Context ctx) {
         return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            // ── Store header
-            pw.Center(
-              child: pw.Column(
-                children: [
-                  pw.Text(
-                    'TERA POS',
-                    style: pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                      color: pdfPrimary,
-                    ),
-                  ),
-                  pw.SizedBox(height: 2),
-                  pw.Text(
-                    'Point of Sale',
-                    style: pw.TextStyle(fontSize: 9, color: pdfInkMid),
-                  ),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 8),
-            pw.Divider(color: pdfBorder, thickness: 0.5),
-            pw.SizedBox(height: 6),
-
-            // ── Receipt meta
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  'Receipt #${sale.id}',
-                  style: pw.TextStyle(
-                      fontSize: 9, fontWeight: pw.FontWeight.bold),
-                ),
-                pw.Text(
-                  dateStr,
-                  style: pw.TextStyle(fontSize: 8, color: pdfInkMid),
-                ),
-              ],
-            ),
-
-            pw.SizedBox(height: 8),
-            pw.Divider(color: pdfBorder, thickness: 0.5),
-            pw.SizedBox(height: 6),
-
-            // ── Items column headers
-            pw.Row(
-              children: [
-                pw.Expanded(
-                  flex: 4,
+            if (logo != null) ...[
+              pw.Image(logo, width: 100),
+              pw.SizedBox(height: 8),
+            ],
+            ...lines.map(
+              (l) => pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 2),
+                child: pw.Align(
+                  alignment: pw.Alignment.centerLeft,
                   child: pw.Text(
-                    'ITEM',
+                    l,
                     style: pw.TextStyle(
-                        fontSize: 8,
-                        fontWeight: pw.FontWeight.bold,
-                        color: pdfInkMid),
-                  ),
-                ),
-                pw.SizedBox(width: 4),
-                pw.Text(
-                  'QTY',
-                  style: pw.TextStyle(
-                      fontSize: 8,
-                      fontWeight: pw.FontWeight.bold,
-                      color: pdfInkMid),
-                ),
-                pw.SizedBox(width: 8),
-                pw.Text(
-                  'AMOUNT',
-                  style: pw.TextStyle(
-                      fontSize: 8,
-                      fontWeight: pw.FontWeight.bold,
-                      color: pdfInkMid),
-                ),
-              ],
-            ),
-
-            pw.SizedBox(height: 4),
-            pw.Divider(color: pdfBorder, thickness: 0.3),
-
-            // ── Items
-            ...sale.items.map((item) {
-              return pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 3),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      children: [
-                        pw.Expanded(
-                          flex: 4,
-                          child: pw.Text(
-                            item.productName,
-                            style: pw.TextStyle(
-                                fontSize: 9,
-                                fontWeight: pw.FontWeight.bold),
-                          ),
-                        ),
-                        pw.SizedBox(width: 4),
-                        pw.Text(
-                          '${item.quantity}',
-                          style: pw.TextStyle(fontSize: 9),
-                        ),
-                        pw.SizedBox(width: 8),
-                        pw.Text(
-                          CurrencyFormatter.format(item.subtotal),
-                          style: pw.TextStyle(
-                              fontSize: 9,
-                              fontWeight: pw.FontWeight.bold),
-                        ),
-                      ],
+                      fontSize: 7,
+                      font: pw.Font.courier(),
+                      lineSpacing: 1.1,
                     ),
-                    pw.Text(
-                      '@ ${CurrencyFormatter.format(item.unitPrice)} each',
-                      style: pw.TextStyle(
-                          fontSize: 7.5, color: pdfInkMid),
-                    ),
-                  ],
+                  ),
                 ),
-              );
-            }),
-
-            pw.SizedBox(height: 6),
-            pw.Divider(color: pdfBorder, thickness: 0.5),
-            pw.SizedBox(height: 6),
-
-            // ── Subtotal / VAT
-            _pdfRow('Subtotal', CurrencyFormatter.format(sale.subtotal),
-                pdfInkMid),
-            pw.SizedBox(height: 3),
-            _pdfRow('VAT (18%)', CurrencyFormatter.format(sale.totalVat),
-                pdfInkMid),
-            pw.SizedBox(height: 6),
-
-            // ── Total box
-            pw.Container(
-              padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 6),
-              decoration: pw.BoxDecoration(
-                color: pdfPrimary,
-                borderRadius: pw.BorderRadius.circular(4),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'TOTAL',
-                    style: pw.TextStyle(
-                        fontSize: 11,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white),
-                  ),
-                  pw.Text(
-                    CurrencyFormatter.format(sale.total),
-                    style: pw.TextStyle(
-                        fontSize: 13,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white),
-                  ),
-                ],
               ),
             ),
-
-            pw.SizedBox(height: 8),
-
-            // ── Payment method pill
-            pw.Container(
-              padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 5),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: pdfBorder, width: 0.5),
-                borderRadius: pw.BorderRadius.circular(4),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Payment',
-                    style: pw.TextStyle(
-                        fontSize: 9, color: pdfInkMid),
-                  ),
-                  pw.Text(
-                    payLabel(sale.paymentMethod),
-                    style: pw.TextStyle(
-                        fontSize: 9,
-                        fontWeight: pw.FontWeight.bold,
-                        color: pdfAccent),
-                  ),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 12),
-            pw.Divider(color: pdfBorder, thickness: 0.5),
-            pw.SizedBox(height: 8),
-
-            // ── Footer
-            pw.Center(
-              child: pw.Column(
-                children: [
-                  pw.Text(
-                    'Thank you for your purchase!',
-                    style: pw.TextStyle(
-                        fontSize: 9,
-                        fontWeight: pw.FontWeight.bold,
-                        color: pdfPrimary),
-                  ),
-                  pw.SizedBox(height: 2),
-                  pw.Text(
-                    'Powered by Tera POS',
-                    style: pw.TextStyle(
-                        fontSize: 8, color: pdfInkMid),
-                  ),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 8),
           ],
         );
       },
     ),
   );
-
   return doc.save();
 }
 
-// Helper for PDF summary rows
-pw.Widget _pdfRow(String label, String value, PdfColor labelColor) {
-  return pw.Row(
-    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-    children: [
-      pw.Text(label,
-          style: pw.TextStyle(fontSize: 9, color: labelColor)),
-      pw.Text(value,
-          style:
-              pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
-    ],
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// RECEIPT DIALOG  (StatefulWidget so we can track _isPrinting)
-// ════════════════════════════════════════════════════════════════════════════
 class ReceiptDialog extends StatefulWidget {
   const ReceiptDialog({
     super.key,
     required this.sale,
+    this.shop,
     required this.onClose,
   });
 
-  final SaleEntity   sale;
+  final SaleEntity sale;
+  final ShopEntity? shop;
   final VoidCallback onClose;
 
   @override
@@ -342,24 +113,35 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
   bool _isConnectingPrinter = false;
   String? _connectedPrinterName;
 
+  ShopEntity get _effectiveShop =>
+      widget.shop ?? TraReceiptDefaults.demoShop;
+
   String get _formattedDate =>
       DateFormat('MMM dd, yyyy  HH:mm').format(widget.sale.createdAt);
 
   String _payLabel(String? method) {
     switch ((method ?? '').toLowerCase()) {
-      case 'cash':   return 'Cash';
-      case 'card':   return 'Card';
-      case 'mobile': return 'Mobile Money';
-      default:       return method ?? '—';
+      case 'cash':
+        return 'Cash';
+      case 'card':
+        return 'Card';
+      case 'mobile':
+        return 'Mobile Money';
+      default:
+        return method ?? '—';
     }
   }
 
   IconData _payIcon(String? method) {
     switch ((method ?? '').toLowerCase()) {
-      case 'cash':   return Icons.payments_rounded;
-      case 'card':   return Icons.credit_card_rounded;
-      case 'mobile': return Icons.smartphone_rounded;
-      default:       return Icons.payment_rounded;
+      case 'cash':
+        return Icons.payments_rounded;
+      case 'card':
+        return Icons.credit_card_rounded;
+      case 'mobile':
+        return Icons.smartphone_rounded;
+      default:
+        return Icons.payment_rounded;
     }
   }
 
@@ -367,10 +149,11 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
     if (_isConnectingPrinter || _isPrinting) return;
     setState(() => _isConnectingPrinter = true);
     try {
-      // Check Bluetooth permissions
-      final hasPermission = await PrintBluetoothThermal.isPermissionBluetoothGranted;
+      final hasPermission =
+          await PrintBluetoothThermal.isPermissionBluetoothGranted;
       if (!hasPermission) {
-        _showError('Bluetooth permission denied. Please enable Bluetooth permissions in app settings and retry.');
+        _showError(
+            'Bluetooth permission denied. Allow permissions and retry.');
         return;
       }
 
@@ -382,14 +165,9 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
 
       final pairedDevices = await PrintBluetoothThermal.pairedBluetooths;
       if (pairedDevices.isEmpty) {
-        _showError('No paired printers found. Pair printer in device settings first.');
+        _showError(
+            'No paired printers found. Pair printer in device settings first.');
         return;
-      }
-      
-      // Debug: Log available devices
-      print('Found ${pairedDevices.length} paired devices:');
-      for (final device in pairedDevices) {
-        print('- ${device.name} (${device.macAdress})');
       }
 
       if (!mounted) return;
@@ -409,7 +187,8 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                 final device = pairedDevices[index];
                 return ListTile(
                   leading: const Icon(Icons.print_rounded, color: _C.primary),
-                  title: Text(device.name.isEmpty ? 'Unknown Printer' : device.name),
+                  title: Text(
+                      device.name.isEmpty ? 'Unknown Printer' : device.name),
                   subtitle: Text(device.macAdress),
                   onTap: () => Navigator.of(ctx).pop(device),
                 );
@@ -432,7 +211,8 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
       await prefs.setString(_printerMacKey, selected.macAdress);
       if (!mounted) return;
       setState(() {
-        _connectedPrinterName = selected.name.isEmpty ? 'Bluetooth Printer' : selected.name;
+        _connectedPrinterName =
+            selected.name.isEmpty ? 'Bluetooth Printer' : selected.name;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Printer connected successfully.')),
@@ -447,237 +227,140 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
   Future<bool> _ensurePrinterConnected() async {
     try {
       final isConnected = await PrintBluetoothThermal.connectionStatus;
-      print('Current printer connection status: $isConnected');
       if (isConnected) return true;
 
       final prefs = await SharedPreferences.getInstance();
       final savedMac = prefs.getString(_printerMacKey);
-      if (savedMac == null || savedMac.isEmpty) {
-        print('No saved printer MAC address found');
-        return false;
-      }
+      if (savedMac == null || savedMac.isEmpty) return false;
 
-      print('Attempting to reconnect to printer: $savedMac');
-      
-      // Add timeout for connection attempt
       final connected = await PrintBluetoothThermal.connect(
-        macPrinterAddress: savedMac
+        macPrinterAddress: savedMac,
       ).timeout(const Duration(seconds: 10));
-      
-      print('Reconnection result: $connected');
       if (!connected) return false;
-      
-      // Wait a moment for connection to stabilize
-      await Future.delayed(const Duration(milliseconds: 1000));
+
+      await Future.delayed(const Duration(milliseconds: 800));
       return true;
     } catch (e) {
-      print('Error ensuring printer connection: $e');
+      debugPrint('Bluetooth reconnect error: $e');
       return false;
     }
   }
 
-  Future<List<int>> _buildThermalTicketBytes(SaleEntity sale) async {
+  Future<List<int>> _buildThermalTicketBytes() async {
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm80, profile);
-    final List<int> bytes = [];
-    final dateStr = DateFormat('MMM dd, yyyy  HH:mm').format(sale.createdAt);
-
+    final bytes = <int>[];
     bytes.addAll(generator.reset());
-    bytes.addAll(generator.text(
-      'TERA POS',
-      styles: const PosStyles(
-        bold: true,
-        align: PosAlign.center,
-        width: PosTextSize.size2,
-        height: PosTextSize.size2,
-      ),
-    ));
-    bytes.addAll(generator.text(
-      'Point of Sale',
-      styles: const PosStyles(align: PosAlign.center),
-    ));
-    bytes.addAll(generator.hr());
-    bytes.addAll(generator.text('Receipt #${sale.id}'));
-    bytes.addAll(generator.text(dateStr));
-    bytes.addAll(generator.hr());
 
-    for (final item in sale.items) {
+    try {
+      final data = await rootBundle.load('assets/images/logo/logo.png');
+      final decoded = img.decodeImage(data.buffer.asUint8List());
+      if (decoded != null) {
+        bytes.addAll(generator.image(decoded, align: PosAlign.center));
+        bytes.addAll(generator.feed(1));
+      }
+    } catch (_) {}
+
+    final lines = TraReceiptFormatter.buildLines(
+      sale: widget.sale,
+      shop: _effectiveShop,
+    );
+    for (final line in lines) {
       bytes.addAll(generator.text(
-        item.productName,
-        styles: const PosStyles(bold: true),
+        line,
+        styles: const PosStyles(align: PosAlign.left),
       ));
-      bytes.addAll(generator.row([
-        PosColumn(text: '${item.quantity} x', width: 2),
-        PosColumn(text: CurrencyFormatter.format(item.unitPrice), width: 5),
-        PosColumn(
-          text: CurrencyFormatter.format(item.subtotal),
-          width: 5,
-          styles: const PosStyles(align: PosAlign.right),
-        ),
-      ]));
     }
-
-    bytes.addAll(generator.hr());
-    bytes.addAll(generator.row([
-      PosColumn(text: 'Subtotal', width: 6),
-      PosColumn(
-        text: CurrencyFormatter.format(sale.subtotal),
-        width: 6,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]));
-    bytes.addAll(generator.row([
-      PosColumn(text: 'VAT (18%)', width: 6),
-      PosColumn(
-        text: CurrencyFormatter.format(sale.totalVat),
-        width: 6,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]));
-    bytes.addAll(generator.row([
-      PosColumn(text: 'TOTAL', width: 6, styles: const PosStyles(bold: true)),
-      PosColumn(
-        text: CurrencyFormatter.format(sale.total),
-        width: 6,
-        styles: const PosStyles(align: PosAlign.right, bold: true),
-      ),
-    ]));
-    bytes.addAll(generator.feed(1));
-    bytes.addAll(generator.text('Paid via: ${_payLabel(sale.paymentMethod)}'));
-    bytes.addAll(generator.feed(1));
-    bytes.addAll(generator.text(
-      'Thank you for your purchase!',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
-    ));
-    bytes.addAll(generator.text(
-      'Powered by Tera POS',
-      styles: const PosStyles(align: PosAlign.center),
-    ));
     bytes.addAll(generator.feed(2));
     bytes.addAll(generator.cut());
     return bytes;
   }
 
-Future<void> _printReceipt() async {
-  if (_isPrinting) return;
-  setState(() => _isPrinting = true);
-  HapticFeedback.mediumImpact();
+  Future<void> _printSunmiTra() async {
+    try {
+      final data = await rootBundle.load('assets/images/logo/logo.png');
+      final decoded = img.decodeImage(data.buffer.asUint8List());
+      if (decoded != null) {
+        final png = Uint8List.fromList(img.encodePng(decoded));
+        await SunmiPrinter.printImage(png, align: SunmiPrintAlign.CENTER);
+        await SunmiPrinter.lineWrap(1);
+      }
+    } catch (_) {}
 
-  try {
-    await SunmiPrinter.bindingPrinter();
-
-    // ── Header
-    await SunmiPrinter.printText(
-      'TERA POS\n',
-      style: SunmiTextStyle(bold: true, fontSize: 40, align: SunmiPrintAlign.CENTER),
+    final lines = TraReceiptFormatter.buildLines(
+      sale: widget.sale,
+      shop: _effectiveShop,
     );
-    await SunmiPrinter.printText(
-      'Point of Sale\n',
-      style: SunmiTextStyle(fontSize: 24, align: SunmiPrintAlign.CENTER),
-    );
-    await SunmiPrinter.line();
-
-    // ── Receipt meta
-    await SunmiPrinter.printText('Receipt #: ${widget.sale.id}\n');
-    await SunmiPrinter.printText(
-      'Date: ${DateFormat('MMM dd, yyyy  HH:mm').format(widget.sale.createdAt)}\n',
-    );
-    await SunmiPrinter.line();
-
-    // ── Items
-    for (final item in widget.sale.items) {
-      await SunmiPrinter.printText(
-        '${item.productName}\n',
-        style: SunmiTextStyle(bold: true),
-      );
-      await SunmiPrinter.printRow(cols: [
-        SunmiColumn(
-          text: '${item.quantity} x ${CurrencyFormatter.format(item.unitPrice)}',
-          width: 2,
-        ),
-        SunmiColumn(
-          text: CurrencyFormatter.format(item.subtotal),
-          width: 1,
-        ),
-      ]);
+    for (final line in lines) {
+      await SunmiPrinter.printText('$line\n');
     }
-
-    await SunmiPrinter.line();
-
-    // ── Subtotal
-    await SunmiPrinter.printRow(cols: [
-      SunmiColumn(text: 'Subtotal', width: 2),
-      SunmiColumn(
-        text: CurrencyFormatter.format(widget.sale.subtotal),
-        width: 1,
-      ),
-    ]);
-
-    // ── VAT
-    await SunmiPrinter.printRow(cols: [
-      SunmiColumn(text: 'VAT (18%)', width: 2),
-      SunmiColumn(
-        text: CurrencyFormatter.format(widget.sale.totalVat),
-        width: 1,
-      ),
-    ]);
-
-    await SunmiPrinter.line();
-
-    // ── Total (print bold text then the row)
-    await SunmiPrinter.printText(
-      'TOTAL\n',
-      style: SunmiTextStyle(bold: true, fontSize: 30),
-    );
-    await SunmiPrinter.printText(
-      '${CurrencyFormatter.format(widget.sale.total)}\n',
-      style: SunmiTextStyle(bold: true, fontSize: 30, align: SunmiPrintAlign.RIGHT),
-    );
-
-    await SunmiPrinter.lineWrap(1);
-
-    // ── Payment
-    await SunmiPrinter.printText(
-      'Payment: ${_payLabel(widget.sale.paymentMethod)}\n',
-    );
-
-    await SunmiPrinter.line();
-
-    // ── Footer
-    await SunmiPrinter.printText(
-      'Thank you for your purchase!\n',
-      style: SunmiTextStyle(bold: true, align: SunmiPrintAlign.CENTER),
-    );
-    await SunmiPrinter.printText(
-      'Powered by Tera POS\n',
-      style: SunmiTextStyle(align: SunmiPrintAlign.CENTER),
-    );
-
-    await SunmiPrinter.lineWrap(3);
-    await SunmiPrinter.cut();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Receipt printed!')),
-      );
-    }
-  } catch (e) {
-    debugPrint('🖨️ Sunmi print error: $e');
-    _showError('Print failed: $e');
-  } finally {
-    if (mounted) setState(() => _isPrinting = false);
+    await SunmiPrinter.lineWrap(2);
+    await SunmiPrinter.cutPaper();
   }
-}  // ── Share as PDF ───────────────────────────────────────────────────────
+
+  Future<void> _printReceipt() async {
+    if (_isPrinting) return;
+    setState(() => _isPrinting = true);
+    HapticFeedback.mediumImpact();
+
+    try {
+      try {
+        await SunmiPrinter.bindingPrinter();
+        await _printSunmiTra();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Receipt printed')),
+          );
+        }
+        return;
+      } catch (e) {
+        debugPrint('Sunmi print skipped: $e');
+      }
+
+      final btOk = await _ensurePrinterConnected();
+      if (btOk) {
+        final ticket = await _buildThermalTicketBytes();
+        final ok = await PrintBluetoothThermal.writeBytes(ticket);
+        if (!ok) {
+          _showError('Failed to print on Bluetooth printer.');
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Receipt printed')),
+          );
+        }
+        return;
+      }
+
+      final pdfBytes =
+          await _buildReceiptPdf(widget.sale, _effectiveShop);
+      final name = widget.sale.serialNumber.isNotEmpty
+          ? widget.sale.serialNumber
+          : widget.sale.id;
+      await Printing.layoutPdf(
+        onLayout: (_) async => pdfBytes,
+        name: 'Receipt_$name',
+      );
+    } catch (e) {
+      _showError('Print failed: $e');
+    } finally {
+      if (mounted) setState(() => _isPrinting = false);
+    }
+  }
+
   Future<void> _sharePdf() async {
     if (_isPrinting) return;
     setState(() => _isPrinting = true);
     HapticFeedback.lightImpact();
 
     try {
-      final pdfBytes = await _buildReceiptPdf(widget.sale);
+      final pdfBytes =
+          await _buildReceiptPdf(widget.sale, _effectiveShop);
+      final name = widget.sale.serialNumber.isNotEmpty
+          ? widget.sale.serialNumber
+          : widget.sale.id;
       await Printing.sharePdf(
         bytes: pdfBytes,
-        filename: 'Receipt_${widget.sale.id}.pdf',
+        filename: 'Receipt_$name.pdf',
       );
     } catch (e) {
       _showError('Share failed: $e');
@@ -693,12 +376,19 @@ Future<void> _printReceipt() async {
         content: Text(msg),
         backgroundColor: const Color(0xFFFF4D4D),
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       ),
     );
   }
+
+  double get _displayExcl => widget.sale.totalExclTax > 0
+      ? widget.sale.totalExclTax
+      : (widget.sale.total / 1.18);
+
+  double get _displayTax => widget.sale.totalTax > 0
+      ? widget.sale.totalTax
+      : (widget.sale.total - _displayExcl);
 
   @override
   Widget build(BuildContext context) {
@@ -725,13 +415,10 @@ Future<void> _printReceipt() async {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Fixed success header ──────────────────────────
               _Header(
-                sale:          widget.sale,
+                sale: widget.sale,
                 formattedDate: _formattedDate,
               ),
-
-              // ── Scrollable receipt body ───────────────────────
               Flexible(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -739,45 +426,63 @@ Future<void> _printReceipt() async {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+                      Text(
+                        _effectiveShop.name,
+                        style: _ts(14, weight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${_effectiveShop.address}\n${_effectiveShop.location} · TIN ${_effectiveShop.tin}',
+                        style: _ts(11, color: _C.inkMid),
+                      ),
+                      const SizedBox(height: 16),
                       _SectionTitle(
-                          label:
-                              'Items (${widget.sale.items.length})'),
+                          label: 'Items (${widget.sale.items.length})'),
                       const SizedBox(height: 10),
-                      ...widget.sale.items
-                          .map((item) => _ItemRow(item: item)),
+                      ...widget.sale.items.map((item) => _ItemRow(item: item)),
                       const SizedBox(height: 16),
                       const _HRule(),
                       const SizedBox(height: 14),
-                      _SummaryLine('Subtotal', widget.sale.subtotal),
+                      _SummaryLine(
+                          'Total excl. tax',
+                          CurrencyFormatter.formatTraDecimal(_displayExcl)),
                       const SizedBox(height: 6),
-                      _SummaryLine('VAT (18%)', widget.sale.totalVat),
+                      _SummaryLine(
+                          'Total tax',
+                          CurrencyFormatter.formatTraDecimal(_displayTax)),
                       const SizedBox(height: 10),
                       _TotalLine(total: widget.sale.total),
                       const SizedBox(height: 14),
                       _PaymentMethodRow(
                         label: _payLabel(widget.sale.paymentMethod),
-                        icon:  _payIcon(widget.sale.paymentMethod),
+                        icon: _payIcon(widget.sale.paymentMethod),
                       ),
                       const SizedBox(height: 16),
                       const _HRule(),
-                      const SizedBox(height: 16),
-                      const _Footer(),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Verification: ${widget.sale.verificationCode.isEmpty ? '—' : widget.sale.verificationCode}',
+                        style: _ts(11, color: _C.inkMid),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'TRA: 0800750294 / 0800750750',
+                        style: _ts(11, color: _C.primary, weight: FontWeight.w600),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
-
-              // ── Fixed action buttons ──────────────────────────
               _ActionBar(
                 isPrinting: _isPrinting,
                 isConnectingPrinter: _isConnectingPrinter,
                 connectedPrinterName: _connectedPrinterName,
                 onConnectPrinter: _connectPrinter,
-                onPrint:    _printReceipt,
-                onShare:    _sharePdf,
-                onClose:    widget.onClose,
+                onPrint: _printReceipt,
+                onShare: _sharePdf,
+                onClose: widget.onClose,
               ),
             ],
           ),
@@ -787,17 +492,17 @@ Future<void> _printReceipt() async {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSABLE SUB-WIDGETS
-// ════════════════════════════════════════════════════════════════════════════
-
 class _Header extends StatelessWidget {
   const _Header({required this.sale, required this.formattedDate});
   final SaleEntity sale;
-  final String     formattedDate;
+  final String formattedDate;
 
   @override
   Widget build(BuildContext context) {
+    final receiptLabel = sale.serialNumber.isNotEmpty
+        ? sale.serialNumber
+        : 'Receipt #${sale.id}';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
@@ -826,11 +531,9 @@ class _Header extends StatelessWidget {
               style:
                   _ts(18, weight: FontWeight.w800, color: Colors.white)),
           const SizedBox(height: 4),
-          Text('Receipt #${sale.id}',
-              style: _ts(12, color: Colors.white60)),
+          Text(receiptLabel, style: _ts(12, color: Colors.white60)),
           const SizedBox(height: 2),
-          Text(formattedDate,
-              style: _ts(11, color: Colors.white54)),
+          Text(formattedDate, style: _ts(11, color: Colors.white54)),
         ],
       ),
     );
@@ -882,7 +585,7 @@ class _ItemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${item.quantity} × ${CurrencyFormatter.format(item.unitPrice)}',
+                  '${item.quantity} × ${CurrencyFormatter.formatTraDecimal(item.unitPrice)}',
                   style: _ts(11, color: _C.inkMid),
                 ),
               ],
@@ -890,7 +593,7 @@ class _ItemRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            CurrencyFormatter.format(item.subtotal),
+            CurrencyFormatter.formatTraDecimal(item.subtotal),
             style: _ts(13, weight: FontWeight.w700, color: _C.primary),
           ),
         ],
@@ -900,9 +603,9 @@ class _ItemRow extends StatelessWidget {
 }
 
 class _SummaryLine extends StatelessWidget {
-  const _SummaryLine(this.label, this.amount);
+  const _SummaryLine(this.label, this.amountText);
   final String label;
-  final num    amount;
+  final String amountText;
 
   @override
   Widget build(BuildContext context) {
@@ -910,8 +613,7 @@ class _SummaryLine extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: _ts(13, color: _C.inkMid)),
-        Text(CurrencyFormatter.format(amount),
-            style: _ts(13, weight: FontWeight.w600)),
+        Text(amountText, style: _ts(13, weight: FontWeight.w600)),
       ],
     );
   }
@@ -934,7 +636,7 @@ class _TotalLine extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Total', style: _ts(15, weight: FontWeight.w700)),
+          Text('Total (incl. tax)', style: _ts(15, weight: FontWeight.w700)),
           Text(
             CurrencyFormatter.format(total),
             style: _ts(18, weight: FontWeight.w800, color: _C.primary),
@@ -946,9 +648,8 @@ class _TotalLine extends StatelessWidget {
 }
 
 class _PaymentMethodRow extends StatelessWidget {
-  const _PaymentMethodRow(
-      {required this.label, required this.icon});
-  final String   label;
+  const _PaymentMethodRow({required this.label, required this.icon});
+  final String label;
   final IconData icon;
 
   @override
@@ -976,42 +677,6 @@ class _PaymentMethodRow extends StatelessWidget {
   }
 }
 
-class _Footer extends StatelessWidget {
-  const _Footer();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: List.generate(
-            28,
-            (_) => Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                height: 1,
-                color: _C.inkLight,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          'Thank you for your purchase!',
-          style: _ts(13, weight: FontWeight.w600, color: _C.primary),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Powered by Tera POS',
-          style: _ts(11, color: _C.inkMid),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}
-
 class _HRule extends StatelessWidget {
   const _HRule();
 
@@ -1020,7 +685,6 @@ class _HRule extends StatelessWidget {
       Container(height: 1, color: _C.border);
 }
 
-// ── Action bar with real Print + Share + New Sale ─────────────────────────
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.isPrinting,
@@ -1031,9 +695,9 @@ class _ActionBar extends StatelessWidget {
     required this.onShare,
     required this.onClose,
   });
-  final bool         isPrinting;
-  final bool         isConnectingPrinter;
-  final String?      connectedPrinterName;
+  final bool isPrinting;
+  final bool isConnectingPrinter;
+  final String? connectedPrinterName;
   final VoidCallback onConnectPrinter;
   final VoidCallback onPrint;
   final VoidCallback onShare;
@@ -1072,7 +736,9 @@ class _ActionBar extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: (isPrinting || isConnectingPrinter) ? null : onConnectPrinter,
+              onPressed: (isPrinting || isConnectingPrinter)
+                  ? null
+                  : onConnectPrinter,
               icon: isConnectingPrinter
                   ? const SizedBox(
                       width: 14,
@@ -1081,7 +747,8 @@ class _ActionBar extends StatelessWidget {
                           strokeWidth: 2, color: _C.inkMid),
                     )
                   : const Icon(Icons.bluetooth_searching_rounded, size: 16),
-              label: Text(isConnectingPrinter ? 'Connecting…' : 'Connect Printer'),
+              label: Text(
+                  isConnectingPrinter ? 'Connecting…' : 'Connect Printer'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 foregroundColor: _C.inkMid,
@@ -1092,7 +759,6 @@ class _ActionBar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          // Print + Share
           Row(
             children: [
               Expanded(
@@ -1121,8 +787,7 @@ class _ActionBar extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: isPrinting ? null : onShare,
-                  icon:
-                      const Icon(Icons.share_rounded, size: 16),
+                  icon: const Icon(Icons.share_rounded, size: 16),
                   label: const Text('Share PDF'),
                   style: OutlinedButton.styleFrom(
                     padding:
@@ -1137,7 +802,6 @@ class _ActionBar extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // New Sale
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(

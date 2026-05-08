@@ -8,6 +8,12 @@ class ShopEntity extends Equatable {
   final String email;
   final double taxRate;
   final String currency;
+  final String tin;
+  final String vrn;
+  final String mobile;
+  final String location;
+  final String taxOffice;
+  final String serialPrefix;
   final String status;
   final String? manager;
   final String? ownerName;
@@ -25,6 +31,12 @@ class ShopEntity extends Equatable {
     this.email = '',
     this.taxRate = 0.0,
     this.currency = 'TZS',
+    this.tin = '',
+    this.vrn = '',
+    this.mobile = '',
+    this.location = '',
+    this.taxOffice = '',
+    this.serialPrefix = 'DEM',
     this.status = 'active',
     this.manager,
     this.ownerName,
@@ -44,6 +56,12 @@ class ShopEntity extends Equatable {
         email,
         taxRate,
         currency,
+        tin,
+        vrn,
+        mobile,
+        location,
+        taxOffice,
+        serialPrefix,
         status,
         manager,
         ownerName,
