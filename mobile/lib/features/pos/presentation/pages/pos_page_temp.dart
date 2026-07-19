@@ -1136,8 +1136,8 @@ class _CartSheetState extends State<_CartSheet> {
     setState(() => _localCart.removeWhere((i) => i.product.id == id));
   }
 
-  double get _sub   => _localCart.fold(0.0, (s, i) => s + i.product.price * i.quantity);
-  double get _tax => _sub - (_sub / 1.18);
+  double get _sub =>
+      _localCart.fold(0.0, (s, i) => s + i.product.price * i.quantity);
   double get _total => _sub;
 
   @override
@@ -1280,12 +1280,6 @@ class _CartSheetState extends State<_CartSheet> {
               color: _T.white,
               child: Column(
                 children: [
-                  // Summary rows
-                  _SummRow('Subtotal', _sub),
-                  const SizedBox(height: 6),
-                  _SummRow('VAT (18%)', _tax),
-                  const SizedBox(height: 12),
-                  // Total
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
@@ -1301,11 +1295,11 @@ class _CartSheetState extends State<_CartSheet> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Total amount',
+                            Text('Total',
                                 style:
                                     _T.ts(11, color: _T.inkMid)),
                             const SizedBox(height: 1),
-                            Text('Including all taxes',
+                            Text('incl. VAT 18%',
                                 style: _T.ts(10,
                                     color: _T.inkLight)),
                           ],
@@ -1500,26 +1494,6 @@ class _QtyBtn extends StatelessWidget {
         height: 32,
         child: Icon(icon, size: 16, color: _T.primary),
       ),
-    );
-  }
-}
-
-class _SummRow extends StatelessWidget {
-  const _SummRow(this.label, this.amount);
-  final String label;
-  final double amount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: _T.ts(13, color: _T.inkMid)),
-        Text(
-          CurrencyFormatter.format(amount),
-          style: _T.ts(13, weight: FontWeight.w600, color: _T.ink),
-        ),
-      ],
     );
   }
 }
