@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     allowedHosts: true,
     proxy: {
       '^/api/.*': {
-        target: 'hhttps://terapay.teratech.co.tz/api/',
+        target: 'hhttps://SmartSell.teratech.co.tz/api/',
         changeOrigin: true,
         secure: false,
       },

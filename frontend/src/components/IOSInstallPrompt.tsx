@@ -63,7 +63,7 @@ export function IOSInstallPrompt() {
                   Install App
                 </p>
                 <h2 className="mt-0.5 text-lg font-semibold">
-                  Add TeraPay to your Home Screen
+                  Add SmartSell to your Home Screen
                 </h2>
               </div>
               <button

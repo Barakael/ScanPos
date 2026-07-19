@@ -76,7 +76,7 @@ const Login = () => {
           <div className="w-24 h-24 rounded-2xl pos-gradient flex items-center justify-center mx-auto mb-8 shadow-2xl ring-4 ring-yellow-400/20">
             <Store className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">TeraPay</h1>
+          <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">SmartSell</h1>
           <div className="w-16 h-1 rounded-full mx-auto mb-5" style={{ background: 'hsl(43 100% 50%)' }} />
           <p className="text-base text-white/70 max-w-sm leading-relaxed">
             Modern point-of-sale system with barcode scanning, inventory tracking, and real-time sales analytics.
@@ -112,7 +112,7 @@ const Login = () => {
             <div className="w-10 h-10 rounded-xl pos-gradient flex items-center justify-center shadow-md">
               <Store className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">TeraPay</h1>
+            <h1 className="text-2xl font-bold text-foreground">SmartSell</h1>
           </div>
 
           <h2 className="text-2xl font-bold text-foreground mb-1">Welcome back</h2>

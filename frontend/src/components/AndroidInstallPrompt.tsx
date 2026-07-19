@@ -61,7 +61,7 @@ export function AndroidInstallPrompt() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFB800]">
                   <img
                     src="/icon-192x192.png"
-                    alt="TeraPay"
+                    alt="SmartSell"
                     className="h-10 w-10 rounded-xl object-cover"
                   />
                 </div>
@@ -70,7 +70,7 @@ export function AndroidInstallPrompt() {
                     Install App
                   </p>
                   <h2 className="text-lg font-semibold leading-tight">
-                    TeraPay
+                    SmartSell
                   </h2>
                   <p className="text-xs text-white/50">
                     Add to your Home Screen
@@ -103,7 +103,7 @@ export function AndroidInstallPrompt() {
               onClick={handleInstall}
               className="w-full rounded-2xl bg-[#FFB800] py-3.5 text-center text-sm font-bold text-[#002583] shadow-lg active:scale-95 transition-transform"
             >
-              Install TeraPay
+              Install SmartSell
             </button>
 
             <button

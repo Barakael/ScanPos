@@ -11,7 +11,7 @@ void main() async {
   /// `http://127.0.0.1:8000/api` or your deployed `https://example.com/api`.
   const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://terapay.teratech.co.tz/api/',
+    defaultValue: 'https://SmartSell.teratech.co.tz/api/',
   );
   await setupDependencies(baseUrl: baseUrl);
   // 4. Start the App
