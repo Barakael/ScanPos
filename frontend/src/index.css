@@ -37,15 +37,15 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar — #002583 deep navy */
-    --sidebar-background: 222 100% 26%; /* #002583 */
-    --sidebar-foreground: 220 30% 72%;
-    --sidebar-primary: 43 100% 50%;     /* #FFB800 active gold */
-    --sidebar-primary-foreground: 222 100% 14%;
-    --sidebar-accent: 222 75% 33%;      /* lighter navy hover */
-    --sidebar-accent-foreground: 220 18% 96%;
-    --sidebar-border: 222 80% 20%;
-    --sidebar-ring: 43 100% 50%;
+    /* Sidebar — #174050 teal-navy, #AB6F44 accent */
+    --sidebar-background: 197 55% 20%; /* #174050 */
+    --sidebar-foreground: 195 25% 78%;
+    --sidebar-primary: 25 43% 47%;     /* #AB6F44 active accent */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 197 45% 26%;     /* lighter teal hover */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 197 50% 15%;
+    --sidebar-ring: 25 43% 47%;
 
     --success: 153 60% 40%;
     --success-foreground: 0 0% 100%;
@@ -93,15 +93,15 @@
     --input: 205 35% 21%;
     --ring: 43 100% 50%;
 
-    /* Sidebar — even darker navy in dark mode */
-    --sidebar-background: 205 52% 8%;
-    --sidebar-foreground: 220 18% 60%;
-    --sidebar-primary: 43 100% 50%;     /* #FFB800 */
-    --sidebar-primary-foreground: 205 60% 8%;
-    --sidebar-accent: 205 40% 17%;
-    --sidebar-accent-foreground: 220 18% 90%;
-    --sidebar-border: 205 38% 14%;
-    --sidebar-ring: 43 100% 50%;
+    /* Sidebar — deeper teal in dark mode */
+    --sidebar-background: 197 55% 12%;
+    --sidebar-foreground: 195 20% 65%;
+    --sidebar-primary: 25 48% 55%;     /* #AB6F44 lifted */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 197 40% 18%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 197 45% 10%;
+    --sidebar-ring: 25 43% 47%;
   }
 }
 
@@ -119,27 +119,27 @@
   .glass-card {
     @apply bg-card/90 backdrop-blur-xl border border-border/60 shadow-lg;
   }
-  /* Gold gradient — used on logo mark, buttons, highlights */
+  /* Brand gradient — #174050 → #AB6F44 */
   .pos-gradient {
-    background: linear-gradient(135deg, hsl(43 100% 54%), hsl(43 100% 40%));
+    background: linear-gradient(135deg, #174050 0%, #AB6F44 100%);
   }
-  /* Sidebar — deep navy gradient (light mode) */
+  /* Sidebar — teal-navy gradient (light mode) */
   .sidebar-gradient {
-    background: linear-gradient(180deg, hsl(222 100% 28%), hsl(222 100% 20%));
+    background: linear-gradient(180deg, #174050 0%, #123544 55%, #0d2833 100%);
   }
-  /* Sidebar — darkest navy (dark mode) */
+  /* Sidebar — deeper teal (dark mode) */
   .dark .sidebar-gradient {
-    background: linear-gradient(180deg, hsl(205 52% 10%), hsl(205 55% 6%));
+    background: linear-gradient(180deg, #123544 0%, #0d2833 55%, #0a1f28 100%);
   }
-  /* Gold glow for primary stats */
+  /* Accent glow for primary stats */
   .stat-glow {
-    box-shadow: 0 0 24px -4px hsl(43 100% 50% / 0.25);
+    box-shadow: 0 0 24px -4px rgb(171 111 68 / 0.28);
   }
-  /* Navy glow for secondary elements */
+  /* Primary glow for secondary elements */
   .navy-glow {
-    box-shadow: 0 0 24px -4px hsl(222 100% 40% / 0.20);
+    box-shadow: 0 0 24px -4px rgb(23 64 80 / 0.28);
   }
-  /* Active nav item golden underline bar */
+  /* Active nav item accent bar */
   .nav-active-bar {
     position: relative;
   }
@@ -152,7 +152,7 @@
     width: 3px;
     height: 70%;
     border-radius: 0 2px 2px 0;
-    background: hsl(43 100% 50%);
+    background: #AB6F44;
   }
   .font-mono {
     font-family: 'JetBrains Mono', monospace;

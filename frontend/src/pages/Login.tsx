@@ -7,6 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
 
+const BRAND = {
+  primary: '#174050',
+  accent: '#AB6F44',
+  white: '#FFFFFF',
+} as const;
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,15 +46,19 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left panel — deep navy branding */}
+      {/* Left panel — brand primary */}
       <div
         className="hidden lg:flex lg:w-1/2 items-center justify-center p-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, hsl(222 100% 30%) 0%, hsl(222 100% 20%) 50%, hsl(205 52% 10%) 100%)' }}
+        style={{
+          background: `linear-gradient(145deg, ${BRAND.primary} 0%, #123544 50%, #0d2833 100%)`,
+        }}
       >
-        {/* Subtle gold radial glow */}
+        {/* Subtle accent radial glow */}
         <div
           className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at 30% 70%, hsl(43 100% 50%) 0%, transparent 60%)' }}
+          style={{
+            background: `radial-gradient(ellipse at 30% 70%, ${BRAND.accent} 0%, transparent 60%)`,
+          }}
         />
         {/* Decorative circles */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -73,27 +83,43 @@ const Login = () => {
           transition={{ duration: 0.6 }}
           className="relative z-10 text-center"
         >
-          <div className="w-24 h-24 rounded-2xl pos-gradient flex items-center justify-center mx-auto mb-8 shadow-2xl ring-4 ring-yellow-400/20">
-            <Store className="w-12 h-12 text-white" />
+          <div
+            className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl ring-4 ring-[#AB6F4433]"
+            style={{
+              background: `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.accent} 100%)`,
+            }}
+          >
+            <Store className="w-12 h-12" style={{ color: BRAND.white }} />
           </div>
-          <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">SmartSell</h1>
-          <div className="w-16 h-1 rounded-full mx-auto mb-5" style={{ background: 'hsl(43 100% 50%)' }} />
-          <p className="text-base text-white/70 max-w-sm leading-relaxed">
+          <h1 className="text-5xl font-bold mb-3 tracking-tight" style={{ color: BRAND.white }}>
+            SmartSell
+          </h1>
+          <div
+            className="w-16 h-1 rounded-full mx-auto mb-5"
+            style={{ background: BRAND.accent }}
+          />
+          <p className="text-base max-w-sm leading-relaxed" style={{ color: `${BRAND.white}B3` }}>
             Modern point-of-sale system with barcode scanning, inventory tracking, and real-time sales analytics.
           </p>
-          <div className="mt-10 flex justify-center gap-8 text-xs text-white/50">
+          <div className="mt-10 flex justify-center gap-8 text-xs" style={{ color: `${BRAND.white}80` }}>
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">99.9<span className="text-yellow-400">%</span></p>
+              <p className="text-2xl font-bold" style={{ color: BRAND.white }}>
+                99.9<span style={{ color: BRAND.accent }}>%</span>
+              </p>
               <p>Uptime</p>
             </div>
-            <div className="w-px bg-white/10" />
+            <div className="w-px" style={{ background: `${BRAND.white}1A` }} />
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">10<span className="text-yellow-400">x</span></p>
+              <p className="text-2xl font-bold" style={{ color: BRAND.white }}>
+                10<span style={{ color: BRAND.accent }}>x</span>
+              </p>
               <p>Faster</p>
             </div>
-            <div className="w-px bg-white/10" />
+            <div className="w-px" style={{ background: `${BRAND.white}1A` }} />
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">24<span className="text-yellow-400">/7</span></p>
+              <p className="text-2xl font-bold" style={{ color: BRAND.white }}>
+                24<span style={{ color: BRAND.accent }}>/7</span>
+              </p>
               <p>Support</p>
             </div>
           </div>
@@ -109,13 +135,22 @@ const Login = () => {
           className="w-full max-w-md"
         >
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl pos-gradient flex items-center justify-center shadow-md">
-              <Store className="w-5 h-5 text-white" />
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
+              style={{
+                background: `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.accent} 100%)`,
+              }}
+            >
+              <Store className="w-5 h-5" style={{ color: BRAND.white }} />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">SmartSell</h1>
+            <h1 className="text-2xl font-bold" style={{ color: BRAND.primary }}>
+              SmartSell
+            </h1>
           </div>
 
-          <h2 className="text-2xl font-bold text-foreground mb-1">Welcome back</h2>
+          <h2 className="text-2xl font-bold mb-1" style={{ color: BRAND.primary }}>
+            Welcome back
+          </h2>
           <p className="text-muted-foreground mb-8">Sign in to your account to continue</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -155,7 +190,12 @@ const Login = () => {
               <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{error}</p>
             )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              className="w-full hover:opacity-90"
+              style={{ backgroundColor: BRAND.primary, color: BRAND.white }}
+              disabled={isSubmitting}
+            >
               {isSubmitting ? 'Signing in…' : 'Sign In'}
             </Button>
           </form>
@@ -168,7 +208,7 @@ const Login = () => {
                 <button
                   key={acc.email}
                   onClick={() => { setEmail(acc.email); setPassword('password'); }}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[#AB6F4414]"
                 >
                   <span className="text-foreground font-mono text-xs">{acc.email}</span>
                   <span className="text-xs text-muted-foreground">{acc.role}</span>
