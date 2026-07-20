@@ -18,6 +18,17 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { settingsApi } from '@/services/api';
+import { buildReceiptPrintHtml, ReceiptShopInfo } from '@/lib/receiptPrint';
+
+interface ApiShopInfo {
+  id: number;
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
 
 const POS = () => {
   const { user } = useAuth();
@@ -29,6 +40,17 @@ const POS = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [lastSale, setLastSale] = useState<Sale | null>(null);
   const barcodeRef = useRef<HTMLInputElement>(null);
+
+  const { data: shopSettings } = useQuery<ApiShopInfo>({
+    queryKey: ['my-shop'],
+    queryFn: () => settingsApi.get(),
+  });
+
+  const receiptShop: ReceiptShopInfo = {
+    name: shopSettings?.name?.trim() || 'Shop',
+    address: shopSettings?.address,
+    phone: shopSettings?.phone,
+  };
 
   const itemCount = cart.reduce((n, item) => n + item.quantity, 0);
   const grandTotal = cartTotal;
@@ -73,27 +95,9 @@ const POS = () => {
   const handlePrint = () => {
     if (!lastSale) return;
 
-    const itemRows = lastSale.items.map(item =>
-      `<div class="item">
-        <span>${item.quantity}x ${item.product.name}</span>
-        <span>${formatCurrency(item.product.price * item.quantity)}</span>
-      </div>`
-    ).join('');
-
     const div = document.createElement('div');
     div.id = '__receipt__';
-    div.innerHTML = `
-      <h2>SmartSellS</h2>
-      <p>Receipt #${lastSale.id}</p>
-      <p>${new Date(lastSale.timestamp).toLocaleString()}</p>
-      <p>Cashier: ${lastSale.cashierName}</p>
-      <hr/>
-      ${itemRows}
-      <hr/>
-      <div class="row total"><span>TOTAL</span><span>${formatCurrency(lastSale.total)}</span></div>
-      <div class="row"><span>Payment</span><span>${lastSale.paymentMethod}</span></div>
-      <p style="margin-top:12px;text-align:center;font-size:10px;">Thank you!</p>
-    `;
+    div.innerHTML = buildReceiptPrintHtml(lastSale, receiptShop);
     document.body.appendChild(div);
     window.print();
     document.body.removeChild(div);
@@ -335,26 +339,32 @@ const POS = () => {
             </DialogTitle>
           </DialogHeader>
           {lastSale && (
-            <div id="print-receipt" className="print-receipt">
-              <div className="text-center border-b border-dashed border-border pb-4 mb-4">
-                <h3 className="font-bold text-foreground">MyPOS</h3>
-                <p className="text-xs text-muted-foreground">Receipt #{lastSale.id}</p>
-                <p className="text-xs text-muted-foreground">
+            <div id="print-receipt" className="print-receipt font-mono">
+              <div className="text-center border-b border-dashed border-border pb-4 mb-4 space-y-1">
+                <h3 className="text-lg font-bold text-foreground leading-tight">{receiptShop.name}</h3>
+                {receiptShop.address?.trim() && (
+                  <p className="text-sm text-muted-foreground">{receiptShop.address}</p>
+                )}
+                {receiptShop.phone?.trim() && (
+                  <p className="text-sm text-muted-foreground">TEL : {receiptShop.phone}</p>
+                )}
+                <p className="text-sm text-muted-foreground pt-2">Receipt #{lastSale.id}</p>
+                <p className="text-sm text-muted-foreground">
                   {new Date(lastSale.timestamp).toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground">Cashier: {lastSale.cashierName}</p>
+                <p className="text-sm text-muted-foreground">Cashier: {lastSale.cashierName}</p>
               </div>
 
               <div className="space-y-2 border-b border-dashed border-border pb-4 mb-4">
                 {lastSale.items.map(item => (
-                  <div key={item.product.id} className="flex justify-between text-sm">
-                    <div>
+                  <div key={item.product.id} className="flex justify-between text-sm gap-2">
+                    <div className="min-w-0">
                       <p className="text-foreground">{item.product.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         {item.quantity} x {formatCurrency(item.product.price)}
                       </p>
                     </div>
-                    <span className="font-mono text-foreground">
+                    <span className="font-mono text-foreground shrink-0">
                       {formatCurrency(item.product.price * item.quantity)}
                     </span>
                   </div>
@@ -363,7 +373,7 @@ const POS = () => {
 
               <div className="space-y-1 text-sm mb-4">
                 <div className="flex justify-between font-bold text-foreground text-base">
-                  <span>Total</span>
+                  <span>TOTAL</span>
                   <span>{formatCurrency(lastSale.total)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
@@ -372,9 +382,9 @@ const POS = () => {
                 </div>
               </div>
 
-              <div className="text-center text-xs text-muted-foreground">
+              <div className="text-center text-sm text-muted-foreground space-y-0.5">
                 <p>Thank you for your purchase!</p>
-                <p>Powered by MyPOS</p>
+                <p className="font-medium text-foreground/70">Powered by SmartSell</p>
               </div>
             </div>
           )}
