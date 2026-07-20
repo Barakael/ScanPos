@@ -17,10 +17,9 @@ import { cn } from '@/lib/utils';
 const BRAND = {
   primary: '#174050',
   accent: '#AB6F44',
-  white: '#FFFFFF',
 } as const;
 
-const CHART_COLORS = [BRAND.primary, BRAND.accent, '#2A6B7A', '#C4895E', '#0D2833', '#8B5A3C'];
+const CHART_COLORS = [BRAND.primary, BRAND.accent, '#2A6B7A', '#C4895E', '#4A8A9A', '#8B5A3C'];
 
 type StatCardProps = {
   title: string;
@@ -44,10 +43,22 @@ function StatCard({
   index = 0,
 }: StatCardProps) {
   const tones = {
-    primary: { icon: BRAND.primary, bg: 'bg-[#174050]/10' },
-    accent: { icon: BRAND.accent, bg: 'bg-[#AB6F44]/15' },
-    danger: { icon: '#DC2626', bg: 'bg-red-50' },
-    muted: { icon: '#64748B', bg: 'bg-muted/60' },
+    primary: {
+      icon: 'text-[#174050] dark:text-[#8FCBD6]',
+      bg: 'bg-[#174050]/10 dark:bg-[#8FCBD6]/15',
+    },
+    accent: {
+      icon: 'text-[#AB6F44]',
+      bg: 'bg-[#AB6F44]/15',
+    },
+    danger: {
+      icon: 'text-red-600 dark:text-red-400',
+      bg: 'bg-red-50 dark:bg-red-950/40',
+    },
+    muted: {
+      icon: 'text-muted-foreground',
+      bg: 'bg-muted',
+    },
   }[tone];
 
   return (
@@ -55,17 +66,17 @@ function StatCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="rounded-xl border border-[#174050]/10 bg-white p-3 sm:p-4 shadow-sm"
+      className="rounded-xl border border-border bg-card p-3 sm:p-4 shadow-sm"
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', tones.bg)}>
-          <Icon className="h-4 w-4" style={{ color: tones.icon }} />
+          <Icon className={cn('h-4 w-4', tones.icon)} />
         </div>
         {change && (
           <span
             className={cn(
               'flex items-center gap-0.5 text-[10px] sm:text-xs font-medium',
-              positive ? 'text-[#AB6F44]' : 'text-red-600'
+              positive ? 'text-[#AB6F44]' : 'text-red-600 dark:text-red-400'
             )}
           >
             {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -73,10 +84,7 @@ function StatCard({
           </span>
         )}
       </div>
-      <p
-        className="text-lg sm:text-2xl font-bold tabular-nums leading-tight"
-        style={{ color: BRAND.primary }}
-      >
+      <p className="text-lg sm:text-2xl font-bold tabular-nums leading-tight text-foreground">
         {value}
       </p>
       <p className="mt-0.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
@@ -98,12 +106,9 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <div className={cn('rounded-xl border border-[#174050]/10 bg-white p-4 sm:p-5 shadow-sm', className)}>
-      <h3
-        className="mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base font-semibold"
-        style={{ color: BRAND.primary }}
-      >
-        {Icon && <Icon className="h-4 w-4" style={{ color: BRAND.accent }} />}
+    <div className={cn('rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm', className)}>
+      <h3 className="mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base font-semibold text-foreground">
+        {Icon && <Icon className="h-4 w-4 text-[#AB6F44]" />}
         {title}
       </h3>
       {children}
@@ -188,7 +193,7 @@ function AdminDashboard() {
     <AppLayout>
       <div className="space-y-4 sm:space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ color: BRAND.primary }}>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
             Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}, {user?.name?.split(' ')[0]}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">Platform management overview</p>
@@ -315,7 +320,7 @@ const Dashboard = () => {
     <AppLayout>
       <div className="space-y-4 sm:space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ color: BRAND.primary }}>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
             Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}, {user?.name?.split(' ')[0]}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">Here&apos;s your store overview for today</p>
@@ -342,13 +347,14 @@ const Dashboard = () => {
                 <Tooltip
                   formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{
-                    background: BRAND.white,
-                    border: '1px solid #17405022',
+                    background: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
                     fontSize: '12px',
+                    color: 'hsl(var(--foreground))',
                   }}
                 />
-                <Bar dataKey="sales" fill={BRAND.primary} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sales" fill={BRAND.accent} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </SectionCard>
@@ -371,10 +377,11 @@ const Dashboard = () => {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: BRAND.white,
-                    border: '1px solid #17405022',
+                    background: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
                     fontSize: '12px',
+                    color: 'hsl(var(--foreground))',
                   }}
                 />
               </PieChart>
@@ -432,7 +439,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-xs sm:text-sm font-bold" style={{ color: BRAND.primary }}>
+                    <p className="text-xs sm:text-sm font-bold text-foreground">
                       {formatCurrency(sale.total)}
                     </p>
                     <span className="rounded-full bg-[#AB6F44]/15 px-2 py-0.5 text-[10px] sm:text-xs capitalize text-[#AB6F44]">
@@ -460,10 +467,10 @@ const Dashboard = () => {
                       {p.category}
                     </span>
                   </div>
-                  <p className="truncate text-xs sm:text-sm font-semibold" style={{ color: BRAND.primary }}>
+                  <p className="truncate text-xs sm:text-sm font-semibold text-foreground">
                     {p.name}
                   </p>
-                  <p className="mt-1 text-base sm:text-lg font-bold tabular-nums" style={{ color: BRAND.accent }}>
+                  <p className="mt-1 text-base sm:text-lg font-bold tabular-nums text-[#AB6F44]">
                     {p.total_sold}{' '}
                     <span className="text-[10px] sm:text-xs font-normal text-muted-foreground">sold</span>
                   </p>
