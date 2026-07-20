@@ -7,13 +7,17 @@ import { Sale } from '@/types';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import {
   Camera, Keyboard, Trash2, Plus, Minus, CreditCard,
-  Banknote, Smartphone, Printer, X, Check, Search
+  Banknote, Smartphone, Printer, Check, Search, ShoppingCart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from '@/components/ui/sheet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const POS = () => {
   const { user } = useAuth();
@@ -22,12 +26,21 @@ const POS = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const [lastSale, setLastSale] = useState<Sale | null>(null);
   const barcodeRef = useRef<HTMLInputElement>(null);
+
+  const itemCount = cart.reduce((n, item) => n + item.quantity, 0);
+  const grandTotal = cartTotal;
+  const hasItems = itemCount > 0;
 
   useEffect(() => {
     barcodeRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (itemCount === 0) setCartOpen(false);
+  }, [itemCount]);
 
   const handleBarcodeScan = (barcode: string) => {
     if (!barcode.trim()) return;
@@ -48,6 +61,7 @@ const POS = () => {
     }
     try {
       const sale = await completeSale(method, user!.id, user!.name);
+      setCartOpen(false);
       setLastSale(sale);
       setShowReceipt(true);
       toast.success('Sale completed!');
@@ -90,12 +104,10 @@ const POS = () => {
     p.barcode.includes(searchQuery)
   );
 
-  const grandTotal = cartTotal;
-
   return (
     <AppLayout>
-      <div className="flex flex-col lg:flex-row gap-4 h-auto lg:h-[calc(100vh-6rem)]">
-        {/* Left - Product Grid & Scanner */}
+      <div className="flex flex-col gap-4 h-auto lg:h-[calc(100vh-6rem)] pb-24">
+        {/* Product Grid & Scanner — full width */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Barcode Input Bar */}
           <div className="flex gap-2 mb-4">
@@ -110,7 +122,7 @@ const POS = () => {
                 className="pl-10 font-mono"
               />
             </div>
-           
+
             <Button onClick={() => setShowScanner(true)} variant="outline" size="icon">
               <Camera className="w-4 h-4" />
             </Button>
@@ -128,7 +140,7 @@ const POS = () => {
           </div>
 
           {/* Product Grid */}
-          <div className="flex-1 overflow-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
+          <div className="flex-1 overflow-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 content-start">
             {filteredProducts.map(product => (
               <motion.button
                 key={product.id}
@@ -156,23 +168,60 @@ const POS = () => {
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Right - Cart */}
-        <div className="w-full lg:w-96 glass-card rounded-xl flex flex-col">
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-foreground">Current Sale</h2>
+      {/* Floating cart FAB — bottom right */}
+      <button
+        type="button"
+        disabled={!hasItems}
+        aria-disabled={!hasItems}
+        aria-label={hasItems ? `Open cart, ${itemCount} items` : 'Cart is empty'}
+        onClick={() => {
+          if (!hasItems) return;
+          setCartOpen(true);
+        }}
+        className={cn(
+          'fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all',
+          hasItems
+            ? 'bg-[#FFB800] hover:bg-[#E6A600] cursor-pointer hover:scale-105 active:scale-95'
+            : 'bg-[#FDE68A] opacity-70 cursor-not-allowed pointer-events-none'
+        )}
+      >
+        <ShoppingCart
+          className={cn('w-7 h-7', hasItems ? 'text-white' : 'text-yellow-700/60')}
+        />
+        {hasItems && (
+          <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[#174050] text-white text-[11px] font-bold flex items-center justify-center leading-none shadow">
+            {itemCount > 99 ? '99+' : itemCount}
+          </span>
+        )}
+      </button>
+
+      {/* Cart sheet */}
+      <Sheet open={cartOpen && hasItems} onOpenChange={(open) => hasItems && setCartOpen(open)}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md flex flex-col p-0 gap-0"
+        >
+          <SheetHeader className="p-4 border-b border-border text-left space-y-1">
+            <div className="flex items-center justify-between pr-8">
+              <SheetTitle>Current Sale</SheetTitle>
               {cart.length > 0 && (
-                <button onClick={clearCart} className="text-xs text-destructive hover:underline">
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="text-xs text-destructive hover:underline"
+                >
                   Clear All
                 </button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">{cart.length} items</p>
-          </div>
+            <SheetDescription>
+              {itemCount} item{itemCount !== 1 ? 's' : ''}
+            </SheetDescription>
+          </SheetHeader>
 
-          {/* Cart Items */}
-          <div className="flex-1 overflow-auto p-4 space-y-2">
+          <div className="flex-1 overflow-auto p-4 space-y-2 min-h-0">
             <AnimatePresence>
               {cart.length === 0 ? (
                 <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
@@ -193,6 +242,7 @@ const POS = () => {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button
+                        type="button"
                         onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
                         className="w-6 h-6 rounded bg-secondary flex items-center justify-center hover:bg-secondary/80"
                       >
@@ -200,6 +250,7 @@ const POS = () => {
                       </button>
                       <span className="text-sm font-mono w-6 text-center">{item.quantity}</span>
                       <button
+                        type="button"
                         onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
                         className="w-6 h-6 rounded bg-secondary flex items-center justify-center hover:bg-secondary/80"
                       >
@@ -210,6 +261,7 @@ const POS = () => {
                       {formatCurrency(item.product.price * item.quantity)}
                     </p>
                     <button
+                      type="button"
                       onClick={() => removeFromCart(item.product.id)}
                       className="text-muted-foreground hover:text-destructive"
                     >
@@ -221,13 +273,10 @@ const POS = () => {
             </AnimatePresence>
           </div>
 
-          {/* Totals & Payment */}
-          <div className="border-t border-border p-4 space-y-3">
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-lg font-bold text-foreground border-t border-border pt-2">
-                <span>Total</span>
-                <span className="text-primary">{formatCurrency(grandTotal)}</span>
-              </div>
+          <div className="border-t border-border p-4 space-y-3 mt-auto">
+            <div className="flex justify-between text-lg font-bold text-foreground">
+              <span>Total</span>
+              <span className="text-primary">{formatCurrency(grandTotal)}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
@@ -245,8 +294,8 @@ const POS = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Camera Scanner Dialog */}
       <Dialog open={showScanner} onOpenChange={setShowScanner}>

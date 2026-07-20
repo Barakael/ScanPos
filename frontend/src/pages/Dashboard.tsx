@@ -337,11 +337,11 @@ const Dashboard = () => {
           <SectionCard title="Weekly Sales Overview" className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={weeklySales}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#17405022" />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#17405099" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis
                   tick={{ fontSize: 11 }}
-                  stroke="#17405099"
+                  stroke="hsl(var(--muted-foreground))"
                   tickFormatter={v => `${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
@@ -416,7 +416,7 @@ const Dashboard = () => {
                       <p className="font-mono text-[10px] sm:text-xs text-muted-foreground">{p.barcode}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-xs sm:text-sm font-bold text-red-600">{p.stock} left</p>
+                      <p className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">{p.stock} left</p>
                       <p className="text-[10px] sm:text-xs text-muted-foreground">Min: {p.lowStockThreshold}</p>
                     </div>
                   </div>
