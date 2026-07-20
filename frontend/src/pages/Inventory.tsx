@@ -198,18 +198,20 @@ const Inventory = () => {
                 </div>
               </div>
 
-              {/* Product Table */}
+              {/* Product Table — mobile: Product, Price, Stock (+ Actions for owners) */}
               <div className="glass-card rounded-xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Product</th>
-                        <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Barcode</th>
-                        <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Category</th>
-                        <th className="text-right text-xs font-semibold text-muted-foreground px-4 py-3">Price</th>
-                        <th className="text-right text-xs font-semibold text-muted-foreground px-4 py-3">Stock</th>
-                        <th className="text-right text-xs font-semibold text-muted-foreground px-4 py-3">Actions</th>
+                        <th className="text-left text-xs font-semibold text-muted-foreground px-3 sm:px-4 py-3">Product</th>
+                        <th className="hidden md:table-cell text-left text-xs font-semibold text-muted-foreground px-4 py-3">Barcode</th>
+                        <th className="hidden md:table-cell text-left text-xs font-semibold text-muted-foreground px-4 py-3">Category</th>
+                        <th className="text-right text-xs font-semibold text-muted-foreground px-3 sm:px-4 py-3">Price</th>
+                        <th className="text-right text-xs font-semibold text-muted-foreground px-3 sm:px-4 py-3">Stock</th>
+                        {canManage && (
+                          <th className="text-right text-xs font-semibold text-muted-foreground px-2 sm:px-4 py-3">Actions</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -221,40 +223,50 @@ const Inventory = () => {
                           transition={{ delay: i * 0.03 }}
                           className="border-b border-border/50 hover:bg-muted/30 transition-colors"
                         >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                          <td className="px-3 sm:px-4 py-3">
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
                                 <Package className="w-4 h-4 text-accent-foreground" />
                               </div>
-                              <span className="text-sm font-medium text-foreground">{product.name}</span>
+                              <span className="text-sm font-medium text-foreground truncate">{product.name}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm font-mono text-muted-foreground">{product.barcode}</td>
-                          <td className="px-4 py-3">
+                          <td className="hidden md:table-cell px-4 py-3 text-sm font-mono text-muted-foreground">{product.barcode}</td>
+                          <td className="hidden md:table-cell px-4 py-3">
                             <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
                               {product.category}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-right font-medium text-foreground">{formatCurrency(product.price)}</td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-3 sm:px-4 py-3 text-sm text-right font-medium text-foreground whitespace-nowrap">
+                            {formatCurrency(product.price)}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3 text-right">
                             <span className={`text-sm font-bold ${product.stock <= product.lowStockThreshold ? 'text-destructive' : 'text-foreground'}`}>
                               {product.stock}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              {canManage && (
-                                <>
-                                  <button onClick={() => openEdit(product)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
-                                    <Edit2 className="w-4 h-4" />
-                                  </button>
-                                  <button onClick={() => handleDelete(product.id, product.name)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
+                          {canManage && (
+                            <td className="px-2 sm:px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => openEdit(product)}
+                                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                                  aria-label={`Edit ${product.name}`}
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(product.id, product.name)}
+                                  className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                  aria-label={`Delete ${product.name}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
                         </motion.tr>
                       ))}
                     </tbody>
