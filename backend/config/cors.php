@@ -43,6 +43,9 @@ return [
     'allowed_origins_patterns' => [
         '#^http://localhost(:[0-9]+)?$#',
         '#^http://127\.0\.0\.1(:[0-9]+)?$#',
+        // LAN phone / tablet access (e.g. http://192.168.x.x:5173)
+        '#^http://192\.168\.\d{1,3}\.\d{1,3}(:[0-9]+)?$#',
+        '#^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:[0-9]+)?$#',
         '#^https://[a-zA-Z0-9\-]+\.ngrok-free\.app$#',
         '#^https://[a-zA-Z0-9\-]+\.ngrok\.io$#',
     ],
